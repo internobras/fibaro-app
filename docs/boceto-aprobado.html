@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FÍBARO — Comparador de Tarifas · Sanlúcar de Barrameda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- SheetJS para lectura de .xlsx en el navegador -->
+<script>
+window.addEventListener('error', function(e){
+  if(document.getElementById('fibaro-runtime-error')) return;
+  var box=document.createElement('div');
+  box.id='fibaro-runtime-error';
+  box.style.cssText='position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#2a1215;color:#ffb4ab;border:1px solid #5c2b2e;border-radius:12px;padding:14px 16px;font:13px/1.5 system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.35)';
+  box.innerHTML='<strong style="display:block;margin-bottom:6px;color:#fff">Error al cargar la web</strong>' +
+    'Se ha producido un fallo de JavaScript. Revisa la consola del navegador (F12).<br>' +
+    '<span style="opacity:.9">' + (e.message || 'Error desconocido') + '</span>';
+  document.body.appendChild(box);
+}, true);
+window.addEventListener('DOMContentLoaded', function(){
+  setTimeout(function(){
+    if(!window.React || !window.ReactDOM || !window.Babel){
+      var box=document.createElement('div');
+      box.style.cssText='position:fixed;left:16px;right:16px;top:16px;z-index:99999;background:#fff4e5;color:#663c00;border:1px solid #ffcc80;border-radius:12px;padding:14px 16px;font:13px/1.5 system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.12)';
+      box.innerHTML='<strong style="display:block;margin-bottom:6px">Faltan librerías externas</strong>Necesitas conexión a internet para cargar React, Babel y el lector de Excel en esta versión.';
+      document.body.appendChild(box);
+    }
+  },1200);
+});
+</script>
+
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<style>
+:root{
+  --ink:#030B1A;--ink-2:#071428;--ink-3:#0D1E3A;
+  --blue:#2563EB;--blue-lt:#3B82F6;--blue-glow:rgba(37,99,235,.35);
+  --cyan:#06B6D4;--white:#FAFBFF;--off-white:#F1F5FB;
+  --border-dark:rgba(255,255,255,.07);--border-light:rgba(10,22,40,.08);
+  --font:'Plus Jakarta Sans',system-ui,sans-serif;
+  --transition:all .26s cubic-bezier(.25,.46,.45,.94);
+  --op-mm:#EA580C;--op-jazz:#DC2626;--op-simyo:#0891B2;--op-pepe:#7C3AED;--op-demo:#64748B;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--white);color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--ink)}::-webkit-scrollbar-thumb{background:var(--blue);border-radius:4px}
+
+/* ── Typography ── */
+.t-display{font-size:clamp(2.6rem,6vw,5rem);font-weight:800;line-height:1.08;letter-spacing:-.035em}
+.t-h1{font-size:clamp(1.8rem,4vw,3.4rem);font-weight:800;line-height:1.12;letter-spacing:-.028em}
+.t-h2{font-size:clamp(1.4rem,2.8vw,2.4rem);font-weight:700;line-height:1.2;letter-spacing:-.02em}
+.t-h3{font-size:clamp(1rem,1.8vw,1.3rem);font-weight:600;line-height:1.35}
+.t-body-lg{font-size:clamp(.95rem,1.4vw,1.08rem);line-height:1.7}
+.t-body{font-size:.93rem;line-height:1.65}
+.t-label{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.t-muted{opacity:.6}
+.grad-blue{background:linear-gradient(135deg,#60A5FA,#06B6D4 55%,#818CF8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* ── Layout ── */
+.container{max-width:1200px;margin:0 auto;padding:0 28px}
+.section{padding:96px 0}.section-sm{padding:56px 0}
+@media(max-width:768px){.section{padding:56px 0}.section-sm{padding:36px 0}.container{padding:0 16px}}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 26px;border-radius:100px;font-family:var(--font);font-weight:600;font-size:.88rem;cursor:pointer;border:none;transition:var(--transition);text-decoration:none;white-space:nowrap;line-height:1}
+.btn-primary{background:var(--blue);color:#fff;box-shadow:0 4px 18px var(--blue-glow)}
+.btn-primary:hover{background:#1D4ED8;transform:translateY(-2px);box-shadow:0 10px 32px rgba(37,99,235,.5)}
+.btn-ghost{background:rgba(255,255,255,.07);color:#fff;border:1px solid rgba(255,255,255,.18)}
+.btn-ghost:hover{background:rgba(255,255,255,.12);transform:translateY(-2px)}
+.btn-outline{background:transparent;color:var(--blue);border:1.5px solid var(--blue)}
+.btn-outline:hover{background:var(--blue);color:#fff;transform:translateY(-2px)}
+.btn-sm{padding:9px 18px;font-size:.8rem}
+.btn-lg{padding:17px 34px;font-size:.98rem}
+.btn-icon{padding:9px;border-radius:10px}
+.btn-white{background:#fff;color:var(--ink);box-shadow:0 4px 18px rgba(0,0,0,.12)}
+.btn-white:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(0,0,0,.18)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+
+/* ── Nav ── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:90;transition:var(--transition)}
+.nav-scrolled{background:rgba(3,11,26,.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-dark)}
+.nav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:20px 32px}
+.logo{font-size:1.4rem;font-weight:800;color:#fff;letter-spacing:-.04em;text-decoration:none}
+.logo-accent{color:var(--cyan)}
+.nav-links{display:flex;align-items:center;gap:28px;list-style:none}
+.nav-links a{color:rgba(255,255,255,.65);text-decoration:none;font-size:.87rem;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:#fff}
+.nav-ctas{display:flex;gap:10px}
+@media(max-width:900px){.nav-links{display:none}.nav-inner{padding:15px 18px}}
+
+/* ── Import Banner ── */
+.import-banner{background:var(--ink-2);border-bottom:1px solid var(--border-dark);padding:12px 0;position:sticky;top:0;z-index:89}
+.import-banner-inner{max-width:1280px;margin:0 auto;padding:0 28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.import-demo-badge{background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.3);color:#FDE047;padding:3px 10px;border-radius:6px;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;flex-shrink:0}
+.import-live-badge{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);color:#4ADE80;padding:3px 10px;border-radius:6px;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;flex-shrink:0}
+.import-text{font-size:.82rem;color:rgba(255,255,255,.7);flex:1}
+.import-text strong{color:#fff}
+.import-stats{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.import-stat{font-size:.75rem;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:5px}
+.import-stat-val{color:rgba(255,255,255,.9);font-weight:700}
+.import-warn{font-size:.75rem;color:#FCA5A5;background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.2);padding:4px 10px;border-radius:6px}
+.import-file-input{display:none}
+@media(max-width:600px){.import-banner-inner{gap:10px}.import-stats{display:none}}
+
+/* ── Hero ── */
+.hero{min-height:100vh;background:var(--ink);position:relative;display:flex;align-items:center;overflow:hidden;padding-top:80px}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(37,99,235,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.055) 1px,transparent 1px);background-size:64px 64px}
+.hero-glow{position:absolute;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,.2) 0%,transparent 65%);top:-200px;right:-150px;pointer-events:none}
+.hero-glow-2{position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(6,182,212,.12) 0%,transparent 65%);bottom:-100px;left:-80px;pointer-events:none}
+.hero-inner{max-width:1200px;margin:0 auto;padding:0 28px;display:grid;grid-template-columns:1fr 400px;gap:64px;align-items:center}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 8px;background:rgba(37,99,235,.15);border:1px solid rgba(37,99,235,.3);border-radius:100px;color:#93C5FD;font-size:.73rem;font-weight:700;margin-bottom:24px;letter-spacing:.04em}
+.hero-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan)}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:32px}
+.hero-ops{display:flex;gap:8px;margin-top:36px;padding-top:28px;border-top:1px solid var(--border-dark);flex-wrap:wrap;align-items:center}
+.hero-ops-label{font-size:.72rem;color:rgba(255,255,255,.4);margin-right:4px}
+.op-pill{padding:5px 12px;border-radius:8px;font-size:.75rem;font-weight:700;letter-spacing:.04em}
+@media(max-width:900px){.hero-inner{grid-template-columns:1fr;gap:32px;text-align:center}.hero-ctas{justify-content:center}.hero-ops{justify-content:center}.hero-visual-wrap{display:none}}
+@media(max-width:600px){.hero-inner{padding:0 16px}}
+
+/* ── Operators visual ── */
+.ops-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:40px}
+.op-card{border-radius:16px;padding:20px;border:1.5px solid var(--border-dark);background:rgba(255,255,255,.03);text-align:center;transition:var(--transition)}
+.op-card:hover{border-color:currentColor;background:rgba(255,255,255,.05);transform:translateY(-3px)}
+.op-logo-text{font-size:1rem;font-weight:800;letter-spacing:-.01em;margin-bottom:6px}
+.op-count{font-size:.72rem;color:rgba(255,255,255,.4)}
+@media(max-width:768px){.ops-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* ── Catalog ── */
+.catalog-header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-bottom:24px}
+.catalog-live-wrap{display:flex;align-items:center;gap:8px;font-size:.75rem;color:#64748B}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#22C55E;flex-shrink:0}
+.live-dot.demo{background:#F59E0B}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:32px;align-items:center}
+.filter-btn{padding:8px 18px;border-radius:100px;font-family:var(--font);font-weight:600;font-size:.8rem;cursor:pointer;border:1.5px solid var(--border-light);background:#fff;color:#64748B;transition:var(--transition)}
+.filter-btn.active,.filter-btn:hover{border-color:var(--blue);color:var(--blue);background:rgba(37,99,235,.06)}
+.filter-search{flex:1;min-width:180px;max-width:280px;padding:9px 14px;border-radius:10px;border:1.5px solid var(--border-light);font-family:var(--font);font-size:.85rem;outline:none;background:#fff}
+.filter-search:focus{border-color:var(--blue)}
+.plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:start}
+.plans-grid.cols-4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:1100px){.plans-grid,.plans-grid.cols-4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.plans-grid,.plans-grid.cols-4{grid-template-columns:1fr}}
+.empty-state{text-align:center;padding:64px 24px;color:#94A3B8}
+
+/* ── Plan Card ── */
+.plan-card{border-radius:22px;padding:26px;transition:var(--transition);position:relative;display:flex;flex-direction:column;background:#fff;border:1.5px solid var(--border-light);box-shadow:0 2px 16px rgba(0,0,0,.05)}
+.plan-card:hover{transform:translateY(-5px);box-shadow:0 16px 48px rgba(0,0,0,.1)}
+.plan-card.featured{box-shadow:0 20px 56px rgba(37,99,235,.32)}
+.plan-card.demo-card{border-style:dashed;border-color:rgba(100,116,139,.3);background:rgba(248,250,252,.8)}
+
+.op-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:8px;font-size:.72rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px;width:fit-content}
+.op-badge.MASMOVIL{background:rgba(234,88,12,.1);color:var(--op-mm);border:1px solid rgba(234,88,12,.2)}
+.op-badge.JAZZTEL{background:rgba(220,38,38,.1);color:var(--op-jazz);border:1px solid rgba(220,38,38,.2)}
+.op-badge.SIMYO{background:rgba(8,145,178,.1);color:var(--op-simyo);border:1px solid rgba(8,145,178,.2)}
+.op-badge.PEPEPHONE{background:rgba(124,58,237,.1);color:var(--op-pepe);border:1px solid rgba(124,58,237,.2)}
+.op-badge.DEMO{background:rgba(100,116,139,.1);color:var(--op-demo);border:1px solid rgba(100,116,139,.2)}
+
+.demo-watermark{position:absolute;top:14px;right:14px;background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.25);color:#CA8A04;font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:6px}
+
+.plan-name{font-size:1.05rem;font-weight:800;color:var(--ink);line-height:1.25;margin-bottom:2px}
+.plan-sub{font-size:.75rem;color:#94A3B8;margin-bottom:14px;text-transform:capitalize}
+.plan-speed-row{display:flex;align-items:baseline;gap:3px;margin-bottom:2px}
+.plan-speed-num{font-size:2rem;font-weight:800;line-height:1;color:var(--ink);letter-spacing:-.03em}
+.plan-speed-unit{font-size:.8rem;color:#94A3B8;font-weight:500}
+.plan-lines-row{font-size:.78rem;color:#64748B;margin-bottom:14px}
+.plan-price-block{margin:14px 0 18px;padding:14px;border-radius:12px;background:var(--off-white)}
+.plan-price-promo{display:flex;align-items:baseline;gap:3px;margin-bottom:4px}
+.plan-price-promo-sym{font-size:.9rem;font-weight:700;color:var(--blue)}
+.plan-price-promo-num{font-size:1.7rem;font-weight:800;color:var(--blue);line-height:1;letter-spacing:-.025em}
+.plan-price-promo-per{font-size:.75rem;color:#94A3B8;font-weight:500}
+.plan-price-note{font-size:.72rem;color:#94A3B8;line-height:1.4}
+.plan-price-final{display:flex;align-items:baseline;gap:3px;margin-top:4px}
+.plan-price-final-num{font-size:1.2rem;font-weight:700;color:#374151}
+.plan-price-iva{font-size:.7rem;color:#94A3B8;margin-left:4px}
+
+.plan-divider{height:1px;background:var(--border-light);margin:0 0 16px}
+.plan-feats{list-style:none;margin-bottom:18px;flex:1;display:flex;flex-direction:column;gap:5px}
+.plan-feats li{display:flex;align-items:flex-start;gap:8px;font-size:.83rem;color:#374151;line-height:1.4}
+.plan-feat-check{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.58rem;font-weight:800;margin-top:1px}
+.plan-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+.plan-tag{padding:3px 10px;border-radius:6px;font-size:.68rem;font-weight:600;background:var(--off-white);color:#64748B}
+.plan-tag.no-perm{background:rgba(16,185,129,.08);color:#059669}
+.plan-tag.featured-tag{background:rgba(37,99,235,.08);color:var(--blue)}
+.plan-card-ctas{display:flex;gap:8px;flex-wrap:wrap}
+.plan-card-ctas .btn{flex:1;justify-content:center;font-size:.8rem}
+.plan-conds{font-size:.68rem;color:#CBD5E1;margin-top:10px;line-height:1.5}
+.promo-ribbon{background:linear-gradient(135deg,#F59E0B,#EF4444);color:#fff;font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:0 10px 0 10px;position:absolute;top:0;right:0}
+
+/* ── AI Panel ── */
+.ai-panel{position:fixed;right:0;top:0;bottom:0;width:min(480px,100vw);background:var(--ink);border-left:1px solid var(--border-dark);z-index:200;display:flex;flex-direction:column;transition:transform .4s cubic-bezier(.25,.46,.45,.94);box-shadow:-24px 0 80px rgba(0,0,0,.5)}
+.ai-panel-closed{transform:translateX(100%)}
+.ai-panel-open{transform:translateX(0)}
+.ai-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);z-index:199}
+.ai-header{padding:22px 22px 18px;border-bottom:1px solid var(--border-dark);display:flex;align-items:center;gap:12px}
+.ai-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--cyan));display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+.ai-bubble{padding:13px 16px;border-radius:14px;font-size:.88rem;line-height:1.6;max-width:92%}
+.ai-bubble-bot{background:rgba(255,255,255,.07);color:rgba(255,255,255,.88);align-self:flex-start;border-bottom-left-radius:4px}
+.ai-bubble-user{background:var(--blue);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.ai-opts{display:flex;flex-wrap:wrap;gap:7px}
+.ai-opt{padding:9px 15px;border-radius:100px;border:1.5px solid rgba(255,255,255,.14);background:transparent;color:rgba(255,255,255,.8);font-family:var(--font);font-size:.8rem;font-weight:600;cursor:pointer;transition:var(--transition)}
+.ai-opt:hover{border-color:var(--blue);background:rgba(37,99,235,.2);color:#fff}
+.ai-footer{padding:14px 22px;border-top:1px solid var(--border-dark)}
+.ai-typing span{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4);display:inline-block;animation:typing .9s ease-in-out infinite}
+.ai-typing span:nth-child(2){animation-delay:.15s}
+.ai-typing span:nth-child(3){animation-delay:.3s}
+.ai-rec-card{border-radius:14px;background:linear-gradient(145deg,rgba(37,99,235,.14),rgba(6,182,212,.08));border:1px solid rgba(37,99,235,.22);padding:18px}
+
+/* ── Lines Calculator Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(10px);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:#fff;border-radius:24px;padding:40px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;animation:fadeUp .28s ease}
+.lines-calc-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+.lines-summary{background:var(--off-white);border-radius:12px;padding:18px;margin:16px 0}
+.lines-sum-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:.88rem;border-bottom:1px solid var(--border-light)}
+.lines-sum-row:last-child{border:none;font-weight:700;font-size:1rem;color:var(--ink)}
+.lines-options{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.lines-opt-card{padding:14px 16px;border-radius:12px;border:1.5px solid var(--border-light);cursor:pointer;transition:var(--transition)}
+.lines-opt-card.selected,.lines-opt-card:hover{border-color:var(--blue);background:rgba(37,99,235,.04)}
+.revision-warn{background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.25);border-radius:10px;padding:14px;font-size:.83rem;color:#92400E;line-height:1.6}
+
+/* ── Preorder Modal ── */
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:.82rem;font-weight:600;margin-bottom:5px;color:#374151}
+.form-input{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid #E2E8F0;font-family:var(--font);font-size:.9rem;outline:none;transition:border-color .2s;background:#FAFBFF;color:var(--ink)}
+.form-input:focus{border-color:var(--blue)}
+.form-input::placeholder{color:#CBD5E1}
+textarea.form-input{resize:vertical;min-height:72px}
+.preorder-plan-badge{display:flex;align-items:center;gap:10px;background:var(--off-white);border-radius:12px;padding:12px 16px;margin-bottom:20px}
+.modal-note{font-size:.75rem;color:#94A3B8;background:#F8FAFC;border-radius:10px;padding:12px 14px;margin-top:14px;line-height:1.55}
+
+/* ── Process / Trust / Testimonials ── */
+.trust-bar{background:var(--ink-2);border-top:1px solid var(--border-dark);border-bottom:1px solid var(--border-dark);padding:20px 0}
+.trust-items{display:flex;flex-wrap:wrap;gap:0}
+.trust-item{display:flex;align-items:center;gap:10px;padding:8px 28px;border-right:1px solid var(--border-dark);flex-shrink:0}
+.trust-item:last-child{border-right:none}
+.trust-icon{width:30px;height:30px;border-radius:50%;background:rgba(37,99,235,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.trust-text{font-size:.8rem;color:rgba(255,255,255,.7)}
+.trust-text strong{color:#fff;display:block;font-weight:700;font-size:.85rem}
+@media(max-width:768px){.trust-items{flex-direction:column;gap:0;padding:0 16px}.trust-item{border-right:none;border-bottom:1px solid var(--border-dark);padding:12px 0}}
+
+/* ── FAQ ── */
+.faq-item{border-bottom:1px solid var(--border-light)}
+.faq-q{display:flex;justify-content:space-between;align-items:center;padding:18px 0;cursor:pointer;font-weight:600;font-size:.95rem;user-select:none;gap:14px;color:var(--ink)}
+.faq-icon{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:var(--transition);font-size:.75rem}
+.faq-item.open .faq-icon{background:var(--blue);border-color:var(--blue);color:#fff;transform:rotate(45deg)}
+.faq-a{padding:0 36px 18px 0;color:#64748B;font-size:.9rem;line-height:1.7}
+
+/* ── FAB ── */
+.ai-fab{position:fixed;bottom:26px;right:26px;z-index:150;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 28px rgba(37,99,235,.5);transition:transform .2s}
+.ai-fab:hover{transform:scale(1.1)}
+
+/* ── CTA Final ── */
+.cta-final{background:var(--ink);position:relative;overflow:hidden}
+.cta-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:700px;height:350px;border-radius:50%;background:radial-gradient(ellipse,rgba(37,99,235,.18) 0%,transparent 65%);pointer-events:none}
+.footer{background:var(--ink-3);border-top:1px solid var(--border-dark);padding:44px 0 24px}
+.footer-inner{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:40px;margin-bottom:36px}
+@media(max-width:768px){.footer-inner{grid-template-columns:1fr;gap:24px}}
+.footer-bottom{border-top:1px solid var(--border-dark);padding-top:20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.footer-copy{font-size:.72rem;color:rgba(255,255,255,.3)}
+
+/* ── Misc ── */
+.section-eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--blue);margin-bottom:12px}
+.eyebrow-line{width:22px;height:2px;background:currentColor;border-radius:2px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes typing{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+@keyframes ping2{0%,100%{box-shadow:0 0 0 0 currentColor}50%{box-shadow:0 0 0 4px transparent}}
+@keyframes ringRot{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes ringRotR{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+@keyframes orbPulse{0%,100%{box-shadow:0 0 0 14px rgba(37,99,235,.1),0 0 50px rgba(37,99,235,.45)}50%{box-shadow:0 0 0 22px rgba(37,99,235,.05),0 0 70px rgba(37,99,235,.65)}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+// ── DEMO DATA — se eliminan al importar Excel ──
+window.DEMO_PLANS = [
+  { id_tarifa:'DEMO-001', _is_demo:true, operador:'DEMO', marca_comercial:'DEMO', nombre_tarifa:'Pack Demo Básico · 300 Mb',segmento:'residencial',familia_tarifa:'convergente',subfamilia_tarifa:'captacion',fibra_mb:300,num_lineas_incluidas:1,gb_linea_principal:50,llamadas_movil:'ilimitadas',fijo_incluido:'sí',precio_tramo_1:19.99,meses_tramo_1:6,precio_tramo_2:'',meses_tramo_2:'',precio_final:29.99,iva_incluido:'sí',permanencia_meses_servicio:0,pros_resumen:'Fibra 300 Mb simétrica; Sin permanencia; Router WiFi incluido',ideal_para:'Uso básico · 1-2 personas',descripcion_corta_web:'Datos de ejemplo. Importa el Excel maestro para ver tarifas reales.' },
+  { id_tarifa:'DEMO-002', _is_demo:true, operador:'DEMO', marca_comercial:'DEMO', nombre_tarifa:'Pack Demo Familiar · 600 Mb',segmento:'residencial',familia_tarifa:'convergente',subfamilia_tarifa:'captacion',fibra_mb:600,num_lineas_incluidas:2,gb_linea_principal:80,llamadas_movil:'ilimitadas',fijo_incluido:'sí',precio_tramo_1:34.99,meses_tramo_1:12,precio_tramo_2:'',meses_tramo_2:'',precio_final:44.99,iva_incluido:'sí',permanencia_meses_servicio:0,pros_resumen:'Fibra 600 Mb simétrica; 2 líneas incluidas; Sin permanencia',ideal_para:'Familias · Teletrabajo',descripcion_corta_web:'Datos de ejemplo. Importa el Excel maestro para ver tarifas reales.',destacada_web:'sí' },
+  { id_tarifa:'DEMO-003', _is_demo:true, operador:'DEMO', marca_comercial:'DEMO', nombre_tarifa:'Pack Demo Premium · 1 Gb',segmento:'residencial',familia_tarifa:'convergente',subfamilia_tarifa:'captacion',fibra_mb:1000,num_lineas_incluidas:3,gb_linea_principal:100,llamadas_movil:'ilimitadas',fijo_incluido:'sí',precio_tramo_1:44.99,meses_tramo_1:12,precio_tramo_2:'',meses_tramo_2:'',precio_final:59.99,iva_incluido:'sí',permanencia_meses_servicio:0,pros_resumen:'Fibra 1 Gb simétrica; 3 líneas incluidas; Sin permanencia; Router WiFi 6E',ideal_para:'Gaming · Streaming 4K · Familias grandes',descripcion_corta_web:'Datos de ejemplo. Importa el Excel maestro para ver tarifas reales.' },
+];
+
+// ── parseExcel — lee el Excel maestro desde el navegador ──
+window.parseExcel = async function(file) {
+  const ab = await file.arrayBuffer();
+  const wb = XLSX.read(ab, { type:'array', cellDates:true });
+  const warnings = [];
+  const norm = s => s?.toString().trim().toLowerCase() || '';
+
+  // Helper: sheet to JSON, defval ''
+  const toJson = name => {
+    if (!wb.Sheets[name]) { warnings.push(`Hoja "${name}" no encontrada`); return []; }
+    return XLSX.utils.sheet_to_json(wb.Sheets[name], { defval:'' });
+  };
+
+  // 01_CATALOGO_TARIFAS — filtrar visible_web=sí Y (admin_ok_publicar=si|sí)
+  const allCat = toJson('01_CATALOGO_TARIFAS');
+  const plans = allCat.filter(r =>
+    norm(r.visible_web) === 'sí' &&
+    ['si','sí'].includes(norm(r.admin_ok_publicar))
+  );
+  if (plans.length === 0 && allCat.length > 0) warnings.push('Ninguna tarifa tiene admin_ok_publicar aprobado. Revisa el Excel.');
+
+  // 03_PROMOCIONES
+  const promos = toJson('03_PROMOCIONES').filter(r =>
+    norm(r.visible_web) === 'sí' && ['si','sí'].includes(norm(r.admin_ok_publicar))
+  );
+
+  // 04_SERVICIOS_EXTRA
+  const extras = toJson('04_SERVICIOS_EXTRA').filter(r =>
+    norm(r.estado) === 'activa' && norm(r.visible_web) === 'sí'
+  );
+
+  // 04B_LINEAS_ADICIONALES — omitir fila de instrucción (id_tarifa==='INSTRUCCIÓN')
+  const lineas = toJson('04B_LINEAS_ADICIONALES').filter(r =>
+    r.id_linea_adicional && r.id_linea_adicional !== 'INSTRUCCIÓN' &&
+    norm(r.estado) === 'activa' && norm(r.visible_web) === 'sí'
+  );
+
+  // 06_REGLAS_IA_BUSCADOR
+  const rules = toJson('06_REGLAS_IA_BUSCADOR').filter(r => r.id_regla);
+
+  const ops = {};
+  plans.forEach(r => { const o = r.operador || 'Otro'; ops[o] = (ops[o]||0)+1; });
+
+  return { plans, promos, extras, lineas, rules, warnings, stats:{ plans:plans.length, promos:promos.length, extras:extras.length, lineas:lineas.length }, operadores:ops };
+};
+
+// ── findLineasAdicionales — lógica con prioridad aplica_a_id_tarifa ──
+window.findLineasAdicionales = function(plan, allLineas) {
+  const planId = (plan.id_tarifa||'').trim();
+  const familia = (plan.familia_tarifa||'').toLowerCase().trim();
+  const subfamilia = (plan.subfamilia_tarifa||'').toLowerCase().trim();
+  const operador = (plan.operador||'').toUpperCase().trim();
+  const active = allLineas || [];
+
+  const splitIds = str => (str||'').split(/;\s*/).map(s=>s.trim()).filter(Boolean);
+
+  // Prioridad 1: coincidencia exacta por id_tarifa
+  const byId = active.filter(l => splitIds(l.aplica_a_id_tarifa).includes(planId));
+  if (byId.length > 0) return { lines: byId, matchType: 'id' };
+
+  // Prioridad 2: familia + operador
+  const byFam = active.filter(l =>
+    (l.aplica_a_familia_tarifa||'').toLowerCase().trim() === familia && familia &&
+    (l.operador||'').toUpperCase().trim() === operador
+  );
+  if (byFam.length > 0) return { lines: byFam, matchType: 'familia' };
+
+  // Prioridad 3: subfamilia + operador
+  const bySub = active.filter(l =>
+    (l.aplica_a_subfamilia_tarifa||'').toLowerCase().trim() === subfamilia && subfamilia &&
+    (l.operador||'').toUpperCase().trim() === operador
+  );
+  if (bySub.length > 0) return { lines: bySub, matchType: 'subfamilia' };
+
+  // Prioridad 4: solo operador
+  const byOp = active.filter(l => (l.operador||'').toUpperCase().trim() === operador);
+  if (byOp.length > 0) return { lines: byOp, matchType: 'operador' };
+
+  return { lines: [], matchType: 'none' };
+};
+</script>
+
+<script type="text/babel">
+/* inlined: fibaro-v2-ui.jsx */
+// fibaro-v2-ui.jsx — Nav, ImportBanner, Hero, Catalog, Plan Card, Process, FAQ, CTA, Footer
+
+const OP_COLORS = {
+  MASMOVIL:  { color:'#EA580C', bg:'rgba(234,88,12,.1)',  border:'rgba(234,88,12,.22)'  },
+  JAZZTEL:   { color:'#DC2626', bg:'rgba(220,38,38,.1)',  border:'rgba(220,38,38,.22)'  },
+  SIMYO:     { color:'#0891B2', bg:'rgba(8,145,178,.1)',  border:'rgba(8,145,178,.22)'  },
+  PEPEPHONE: { color:'#7C3AED', bg:'rgba(124,58,237,.1)', border:'rgba(124,58,237,.22)' },
+  DEMO:      { color:'#64748B', bg:'rgba(100,116,139,.1)',border:'rgba(100,116,139,.22)'},
+};
+const opColor = op => OP_COLORS[(op||'').toUpperCase()] || OP_COLORS.DEMO;
+
+// ── Nav ──
+function FibaroNavV2({ onAiOpen }) {
+  const [sc, setSc] = React.useState(false);
+  React.useEffect(() => {
+    const h = () => setSc(window.scrollY > 48);
+    window.addEventListener('scroll', h, { passive:true });
+    return () => window.removeEventListener('scroll', h);
+  }, []);
+  return (
+    <nav className={`nav ${sc ? 'nav-scrolled' : ''}`}>
+      <div className="nav-inner">
+        <a href="#" className="logo">FÍ<span className="logo-accent">BARO</span></a>
+        <ul className="nav-links">
+          <li><a href="#catalogo">Tarifas</a></li>
+          <li><a href="#proceso">Cómo funciona</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="tel:633671657" style={{color:'rgba(255,255,255,.65)',display:'flex',alignItems:'center',gap:5}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+            633 671 657
+          </a></li>
+        </ul>
+        <div className="nav-ctas">
+          <button className="btn btn-ghost btn-sm" onClick={onAiOpen} style={{display:'flex',alignItems:'center',gap:6}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" fill="white" opacity=".8"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity=".6"/></svg>
+            Asesoramiento IA
+          </button>
+          <a href="#catalogo" className="btn btn-primary btn-sm">Ver tarifas</a>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+// ── Import Banner ──
+function ImportBanner({ isDemoMode, importMeta, onImportClick }) {
+  const [dismissed, setDismissed] = React.useState(false);
+  if (dismissed && !isDemoMode) return null;
+  return (
+    <div className="import-banner" style={{ marginTop: 62 }}>
+      <div className="import-banner-inner">
+        {isDemoMode ? (
+          <>
+            <span className="import-demo-badge">⚠ DEMO</span>
+            <span className="import-text">
+              <strong>Catálogo de demostración</strong> — Importa el Excel maestro real para activar datos de operadores reales
+            </span>
+            <button className="btn btn-primary btn-sm" onClick={onImportClick} style={{flexShrink:0}}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Importar Excel maestro
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="import-live-badge">✓ CATÁLOGO ACTIVO</span>
+            <span className="import-text" style={{fontSize:'.8rem'}}>
+              <strong>{importMeta?.fileName}</strong>
+            </span>
+            <div className="import-stats">
+              {[
+                {label:'Tarifas', val: importMeta?.plans},
+                {label:'Promos', val: importMeta?.promos},
+                {label:'Líneas add.', val: importMeta?.lineas},
+              ].map(s => (
+                <span className="import-stat" key={s.label}>
+                  <span className="import-stat-val">{s.val}</span> {s.label}
+                </span>
+              ))}
+              {importMeta?.operadores && Object.entries(importMeta.operadores).map(([op, n]) => {
+                const oc = opColor(op);
+                return (
+                  <span key={op} style={{fontSize:'.72rem',fontWeight:700,color:oc.color,background:oc.bg,border:`1px solid ${oc.border}`,padding:'2px 8px',borderRadius:6}}>{op} {n}</span>
+                );
+              })}
+            </div>
+            {importMeta?.warnings?.length > 0 && (
+              <span className="import-warn">⚠ {importMeta.warnings[0]}</span>
+            )}
+            <button className="btn btn-ghost btn-sm" onClick={onImportClick} style={{flexShrink:0,fontSize:'.75rem'}}>Recargar</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Hero V2 ──
+function FibaroHeroV2({ onAiOpen, isDemoMode }) {
+  const ops = ['JAZZTEL','MASMOVIL','Pepephone','Simyo'];
+  return (
+    <section className="hero" id="inicio">
+      <div className="hero-grid"/>
+      <div className="hero-glow"/>
+      <div className="hero-glow-2"/>
+      <div className="hero-inner">
+        <div style={{animation:'fadeUp .6s ease both'}}>
+          <div className="hero-eyebrow">
+            <span className="hero-dot"/>
+            FÍBARO · Asesor independiente · Sanlúcar de Barrameda
+          </div>
+          <h1 className="t-display" style={{color:'#fff'}}>
+            Encuentra tu<br/>
+            <span className="grad-blue">tarifa ideal.</span><br/>
+            Sin rodeos.
+          </h1>
+          <p className="t-body-lg" style={{color:'rgba(240,244,255,.62)',marginTop:20,maxWidth:500,animation:'fadeUp .6s ease .15s both'}}>
+            FÍBARO no es el operador. Somos tu asesor independiente: comparamos Jazztel, MASMOVIL, Pepephone y Simyo para encontrar la tarifa que de verdad encaja contigo.
+          </p>
+          <div className="hero-ctas" style={{animation:'fadeUp .6s ease .28s both'}}>
+            <a href="#catalogo" className="btn btn-primary btn-lg">
+              Explorar catálogo
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </a>
+            <button className="btn btn-ghost btn-lg" onClick={onAiOpen}>¿Cuál me conviene?</button>
+          </div>
+          <div className="hero-ops" style={{animation:'fadeUp .6s ease .4s both'}}>
+            <span className="hero-ops-label">Operadores en catálogo:</span>
+            {ops.map(op => {
+              const oc = opColor(op.toUpperCase());
+              return (
+                <span key={op} className="op-pill" style={{background:oc.bg,color:oc.color,border:`1px solid ${oc.border}`}}>{op}</span>
+              );
+            })}
+          </div>
+        </div>
+        <div className="hero-visual-wrap" style={{display:'flex',justifyContent:'center',animation:'fadeIn .8s ease .3s both'}}>
+          <OrbVisual/>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function OrbVisual() {
+  const rings = [
+    {size:120,dur:'9s',color:'rgba(37,99,235,.5)',dir:'normal'},
+    {size:210,dur:'15s',color:'rgba(6,182,212,.28)',dir:'reverse'},
+    {size:320,dur:'24s',color:'rgba(37,99,235,.1)',dir:'normal'},
+  ];
+  return (
+    <div style={{position:'relative',width:360,height:360,flexShrink:0}}>
+      <div style={{position:'absolute',inset:0,background:'radial-gradient(circle at 50% 50%,rgba(37,99,235,.16) 0%,transparent 60%)',borderRadius:'50%'}}/>
+      {rings.map((r,i) => {
+        const h = r.size/2;
+        return (
+          <div key={i} style={{position:'absolute',top:'50%',left:'50%',width:r.size,height:r.size,marginTop:-h,marginLeft:-h,borderRadius:'50%',border:`1px solid ${r.color}`,animation:`${r.dir==='normal'?'ringRot':'ringRotR'} ${r.dur} linear infinite`}}>
+            <div style={{position:'absolute',top:-3.5,left:'50%',marginLeft:-3.5,width:7,height:7,borderRadius:'50%',background:r.color.replace(/[\d.]+\)$/,'0.9)')}}/>
+          </div>
+        );
+      })}
+      <div style={{position:'absolute',top:'50%',left:'50%',width:72,height:72,marginTop:-36,marginLeft:-36,borderRadius:'50%',background:'linear-gradient(135deg,#2563EB,#06B6D4)',animation:'orbPulse 3.5s ease-in-out infinite',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <span style={{color:'#fff',fontWeight:800,fontSize:'1.5rem',fontFamily:'var(--font)'}}>F</span>
+      </div>
+      {[{t:'10%',l:'68%',txt:'Jazztel'},{t:'75%',l:'62%',txt:'MASMOVIL'},{t:'60%',l:'2%',txt:'Simyo'}].map((n,i)=>(
+        <div key={i} style={{position:'absolute',top:n.t,left:n.l,background:'rgba(255,255,255,.06)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,.1)',borderRadius:8,padding:'4px 10px',fontSize:'.7rem',fontWeight:700,color:'rgba(255,255,255,.75)',whiteSpace:'nowrap',animation:`orbPulse ${2.5+i*.6}s ease-in-out infinite`,animationDelay:`${i*.35}s`}}>{n.txt}</div>
+      ))}
+    </div>
+  );
+}
+
+// ── Trust Bar ──
+function FibaroTrustV2() {
+  const items = [
+    {icon:'📍',title:'Tienda física',sub:'C/ Infanta Beatriz nº13, Sanlúcar'},
+    {icon:'📞',title:'Llamada directa',sub:'633 671 657'},
+    {icon:'📸',title:'@FIBAROTELECO',sub:'Síguenos en Instagram'},
+    {icon:'✓',title:'Asesoramiento real',sub:'Comparamos por ti, sin comisión oculta'},
+    {icon:'⚡',title:'4 operadores',sub:'Jazztel · MASMOVIL · Pepephone · Simyo'},
+  ];
+  return (
+    <div className="trust-bar">
+      <div className="container">
+        <div className="trust-items">
+          {items.map((it,i)=>(
+            <div className="trust-item" key={i}>
+              <div className="trust-icon" style={{fontSize:'.85rem'}}>{it.icon}</div>
+              <div className="trust-text"><strong>{it.title}</strong>{it.sub}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Catalog Section ──
+function CatalogSectionV2({ plans, lineas, promos, isDemoMode, onPreorder, onCalc }) {
+  const [filterOp, setFilterOp] = React.useState('all');
+  const [filterType, setFilterType] = React.useState('all');
+  const [search, setSearch] = React.useState('');
+  const [visible, setVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    const obs = new IntersectionObserver(([e])=>{ if(e.isIntersecting) setVisible(true); },{threshold:.05});
+    const el = document.getElementById('catalogo');
+    if(el) obs.observe(el);
+    return ()=>obs.disconnect();
+  },[]);
+
+  const operators = [...new Set(plans.filter(p=>!p._is_demo).map(p=>p.operador||p.marca_comercial).filter(Boolean))].sort();
+  const families = [...new Set(plans.filter(p=>!p._is_demo).map(p=>p.familia_tarifa).filter(Boolean))].sort();
+
+  const filtered = plans.filter(p => {
+    const op = (p.operador||p.marca_comercial||'').toUpperCase();
+    const fam = (p.familia_tarifa||'').toLowerCase();
+    const txt = search.toLowerCase();
+    if (filterOp !== 'all' && op !== filterOp) return false;
+    if (filterType !== 'all' && !fam.includes(filterType)) return false;
+    if (txt && !`${p.nombre_tarifa} ${p.operador} ${p.marca_comercial} ${p.ideal_para}`.toLowerCase().includes(txt)) return false;
+    return true;
+  });
+
+  // Find promos for a plan
+  const planPromos = (planId) => promos.filter(pr => {
+    const ids = (pr.aplica_a_tarifas||'').split(/[,;]\s*/).map(s=>s.trim());
+    return ids.includes(planId) && (pr.visible_web?.toLowerCase()==='sí'||pr.visible_web?.toLowerCase()==='si');
+  });
+
+  return (
+    <section className="section" id="catalogo" style={{background:'var(--off-white)'}}>
+      <div className="container">
+        <div className="catalog-header">
+          <div>
+            <div className="section-eyebrow">
+              <div className="eyebrow-line"/>
+              <span className="t-label" style={{color:'var(--blue)'}}>Catálogo de tarifas</span>
+            </div>
+            <h2 className="t-h1">Las mejores tarifas<br/><span style={{color:'var(--blue)'}}>de cada operador</span></h2>
+            <p className="t-body" style={{color:'#64748B',marginTop:10,maxWidth:520}}>
+              FÍBARO te asesora y gestiona. Cada tarifa pertenece a su operador oficial.
+            </p>
+          </div>
+          <div className="catalog-live-wrap">
+            <span className={`live-dot ${isDemoMode?'demo':''}`}/>
+            {isDemoMode
+              ? <span style={{color:'#F59E0B',fontWeight:600}}>Modo demo — Importa el Excel para datos reales</span>
+              : <span><strong style={{color:'#22C55E'}}>{plans.length} tarifas</strong> · {operators.join(' · ')}</span>
+            }
+          </div>
+        </div>
+
+        {isDemoMode && (
+          <div style={{background:'rgba(234,179,8,.08)',border:'1px solid rgba(234,179,8,.25)',borderRadius:12,padding:'14px 18px',marginBottom:24,display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" fill="rgba(234,179,8,.2)" stroke="#D97706" strokeWidth="1.5"/><line x1="12" y1="9" x2="12" y2="13" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="#D97706" strokeWidth="2" strokeLinecap="round"/></svg>
+            <span style={{fontSize:'.85rem',color:'#92400E',flex:1}}>
+              <strong>Datos de demostración.</strong> Las tarjetas siguientes son ejemplos del sistema. Importa el Excel maestro para ver las tarifas reales de Jazztel, MASMOVIL, Pepephone y Simyo.
+            </span>
+          </div>
+        )}
+
+        {!isDemoMode && operators.length > 0 && (
+          <div className="filter-row">
+            <button className={`filter-btn ${filterOp==='all'?'active':''}`} onClick={()=>setFilterOp('all')}>Todos</button>
+            {operators.map(op=>{
+              const oc = opColor(op);
+              return (
+                <button key={op} className={`filter-btn ${filterOp===op?'active':''}`}
+                  onClick={()=>setFilterOp(filterOp===op?'all':op)}
+                  style={filterOp===op?{borderColor:oc.color,color:oc.color,background:oc.bg}:{}}
+                >{op}</button>
+              );
+            })}
+            <span style={{width:1,height:24,background:'var(--border-light)',margin:'0 4px'}}/>
+            <button className={`filter-btn ${filterType==='all'?'active':''}`} onClick={()=>setFilterType('all')}>Todas</button>
+            {['convergente','solo movil','fibra'].map(t=>(
+              <button key={t} className={`filter-btn ${filterType===t?'active':''}`} onClick={()=>setFilterType(filterType===t?'all':t)} style={{textTransform:'capitalize'}}>{t}</button>
+            ))}
+            <input className="filter-search" placeholder="Buscar tarifa…" value={search} onChange={e=>setSearch(e.target.value)}/>
+          </div>
+        )}
+
+        {filtered.length === 0 ? (
+          <div className="empty-state">
+            <p style={{fontSize:'1.1rem',fontWeight:600,marginBottom:8}}>Sin resultados</p>
+            <p style={{fontSize:'.9rem'}}>Prueba a cambiar los filtros o el texto de búsqueda.</p>
+          </div>
+        ) : (
+          <div className={`plans-grid ${filtered.length >= 4 ? 'cols-4' : ''}`}>
+            {filtered.map((plan, i) => (
+              <div key={plan.id_tarifa} style={{animation: visible ? `fadeUp .4s ease ${Math.min(i,.5)*0.08}s both` : 'none', display:'flex', flexDirection:'column'}}>
+                <PlanCardV2
+                  plan={plan}
+                  planPromos={planPromos(plan.id_tarifa)}
+                  lineas={lineas}
+                  onPreorder={onPreorder}
+                  onCalc={onCalc}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p style={{textAlign:'center',marginTop:28,fontSize:'.78rem',color:'#94A3B8'}}>
+          Precios según catálogo del operador. IVA según indique cada tarifa. Sujeto a disponibilidad de cobertura.
+          FÍBARO actúa como canal comercial, no como operador de red.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// ── Plan Card V2 ──
+function PlanCardV2({ plan, planPromos, lineas, onPreorder, onCalc }) {
+  const op = (plan.operador || plan.marca_comercial || 'DEMO').toUpperCase();
+  const oc = opColor(op);
+  const isDemo = plan._is_demo;
+  const featured = (plan.destacada_web||'').toLowerCase() === 'sí';
+
+  const speedMb = parseInt(plan.fibra_mb) || 0;
+  const speedLabel = speedMb >= 1000 ? `${speedMb/1000} Gb` : speedMb ? `${speedMb} Mb` : null;
+  const numLineas = parseInt(plan.num_lineas_incluidas) || 0;
+  const gbPrincipal = plan.gb_linea_principal || '';
+  const p1 = parseFloat(plan.precio_tramo_1) || 0;
+  const m1 = parseInt(plan.meses_tramo_1) || 0;
+  const pf = parseFloat(plan.precio_final) || parseFloat(plan.precio_tramo_1) || 0;
+  const hasPromoPrice = p1 > 0 && m1 > 0 && pf > p1;
+  const ivaLabel = (plan.iva_incluido||'').toLowerCase()==='sí' ? 'IVA incl.' : '+IVA';
+  const noPerm = parseInt(plan.permanencia_meses_servicio) === 0;
+
+  const features = (plan.pros_resumen||'').split(/;\s*/).map(s=>s.trim()).filter(Boolean).slice(0,4);
+  const {lines: lineasOpts} = window.findLineasAdicionales(plan, lineas);
+  const hasLineas = lineasOpts.length > 0 && numLineas > 0;
+
+  const promo = planPromos?.[0];
+
+  return (
+    <div className={`plan-card ${featured?'featured':''} ${isDemo?'demo-card':''}`} style={featured?{borderColor:oc.border,boxShadow:`0 20px 52px ${oc.bg.replace('rgba','rgba').replace('.1)','0.25)')}`}:{}}>
+      {isDemo && <span className="demo-watermark">DEMO</span>}
+      {promo && <span className="promo-ribbon">{promo.nombre_promocion}</span>}
+
+      {/* Operator badge */}
+      <span className={`op-badge ${op}`} style={{background:oc.bg,color:oc.color,border:`1px solid ${oc.border}`}}>
+        <span style={{width:6,height:6,borderRadius:'50%',background:oc.color,display:'inline-block'}}/>
+        {plan.marca_comercial || plan.operador}
+      </span>
+
+      {/* Plan name */}
+      <div className="plan-name">{plan.nombre_tarifa}</div>
+      <div className="plan-sub">{plan.familia_tarifa}{plan.segmento ? ` · ${plan.segmento}` : ''}</div>
+
+      {/* Speed + lines */}
+      {speedLabel && (
+        <div className="plan-speed-row">
+          <span className="plan-speed-num">{speedLabel}</span>
+          <span className="plan-speed-unit"> bajada</span>
+        </div>
+      )}
+      {numLineas > 0 && (
+        <div className="plan-lines-row">
+          {numLineas} línea{numLineas>1?'s':''} incluida{numLineas>1?'s':''}
+          {gbPrincipal ? ` · ${gbPrincipal} GB c/u` : ''}
+          {plan.llamadas_movil ? ` · ${plan.llamadas_movil}` : ''}
+        </div>
+      )}
+
+      {/* Price */}
+      <div className="plan-price-block">
+        {hasPromoPrice ? (
+          <>
+            <div className="plan-price-promo">
+              <span className="plan-price-promo-sym">€</span>
+              <span className="plan-price-promo-num">{p1.toFixed(2).replace('.',',')}</span>
+              <span className="plan-price-promo-per">/mes</span>
+            </div>
+            <div className="plan-price-note">
+              durante {m1} meses — luego
+              <span style={{color:'#374151',fontWeight:700}}> €{pf.toFixed(2).replace('.',',')} /mes</span>
+              {' · '}{ivaLabel}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="plan-price-final">
+              <span style={{fontSize:'1rem',fontWeight:700,color:'#374151'}}>€</span>
+              <span className="plan-price-final-num">{pf.toFixed(2).replace('.',',')}</span>
+              <span style={{fontSize:'.78rem',color:'#94A3B8',fontWeight:500}}>/mes</span>
+              <span className="plan-price-iva">{ivaLabel}</span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Tags */}
+      <div className="plan-tags">
+        {noPerm && <span className="plan-tag no-perm">Sin permanencia</span>}
+        {featured && <span className="plan-tag featured-tag">★ Destacada</span>}
+        {plan.recomendable_ia==='sí' && <span className="plan-tag" style={{background:'rgba(6,182,212,.08)',color:'#0891B2'}}>Recomendable IA</span>}
+        {plan.tv_incluida==='sí' && <span className="plan-tag">TV incluida</span>}
+      </div>
+
+      <div className="plan-divider"/>
+
+      {/* Features */}
+      {features.length > 0 && (
+        <ul className="plan-feats">
+          {features.map((f,i)=>(
+            <li key={i}>
+              <span className="plan-feat-check" style={{background:oc.bg,color:oc.color}}>✓</span>
+              {f}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Ideal para */}
+      {plan.ideal_para && (
+        <div style={{fontSize:'.75rem',color:'#94A3B8',marginBottom:14,lineHeight:1.4}}>
+          <span style={{fontWeight:600,color:'#64748B'}}>Ideal: </span>{plan.ideal_para}
+        </div>
+      )}
+
+      {/* CTAs */}
+      <div className="plan-card-ctas">
+        {hasLineas && !isDemo && (
+          <button className="btn btn-outline btn-sm" style={{flexShrink:0,padding:'9px 14px'}} onClick={()=>onCalc(plan)}>
+            + Líneas
+          </button>
+        )}
+        <button className="btn btn-primary btn-sm" style={{flex:1,justifyContent:'center'}} onClick={()=>onPreorder(plan, null)}>
+          Reservar →
+        </button>
+      </div>
+
+      {plan.permanencia_meses_servicio > 0 && (
+        <p className="plan-conds">{plan.permanencia_meses_servicio} meses de permanencia. {plan.condiciones_resumidas || ''}</p>
+      )}
+    </div>
+  );
+}
+
+// ── Process ──
+function FibaroProcessV2() {
+  const steps = [
+    {n:'01',t:'Explora o deja que la IA te guíe',d:'Navega el catálogo por operador o usa el asistente para una recomendación personalizada.'},
+    {n:'02',t:'Calcula si necesitas más líneas',d:'Indica cuántas líneas necesitas y calculamos el precio total con líneas adicionales.'},
+    {n:'03',t:'Reserva tu prepedido',d:'Déjanos tu nombre, teléfono y dirección. Sin compromiso ni contrato.'},
+    {n:'04',t:'Te llamamos en 24 horas',d:'Verificamos cobertura y confirmamos todos los detalles contigo por teléfono.'},
+    {n:'05',t:'Tramitamos todo contigo',d:'Gestionamos el alta con el operador elegido. Tú solo esperas la instalación.'},
+  ];
+  return (
+    <section className="section dark-section" id="proceso" style={{background:'var(--ink)'}}>
+      <div className="container">
+        <div style={{textAlign:'center',maxWidth:560,margin:'0 auto'}}>
+          <div className="section-eyebrow" style={{color:'var(--cyan)',justifyContent:'center'}}>
+            <div className="eyebrow-line" style={{background:'var(--cyan)'}}/>
+            <span className="t-label">Proceso claro</span>
+            <div className="eyebrow-line" style={{background:'var(--cyan)'}}/>
+          </div>
+          <h2 className="t-h1" style={{color:'#fff'}}>Cinco pasos.<br/><span className="grad-blue">Todo controlado.</span></h2>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:20,marginTop:52,position:'relative'}} className="process-grid">
+          {steps.map((s,i)=>(
+            <div key={i} style={{textAlign:'center'}}>
+              <div style={{width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,var(--blue),var(--cyan))',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:800,fontSize:'1rem',color:'#fff',margin:'0 auto 14px',boxShadow:'0 6px 20px var(--blue-glow)',position:'relative',zIndex:1}}>{s.n}</div>
+              <div style={{fontSize:'.88rem',fontWeight:700,color:'rgba(255,255,255,.9)',marginBottom:6}}>{s.t}</div>
+              <div style={{fontSize:'.76rem',color:'rgba(255,255,255,.45)',lineHeight:1.55}}>{s.d}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{textAlign:'center',marginTop:48,padding:'24px',background:'rgba(37,99,235,.1)',borderRadius:16,border:'1px solid rgba(37,99,235,.18)'}}>
+          <p style={{color:'rgba(255,255,255,.7)',fontSize:'.88rem'}}>
+            <span style={{color:'#93C5FD',fontWeight:700}}>El prepedido no obliga a nada.</span> Solo nos sirve para reservar tu turno, verificar cobertura y preparar todo antes de llamarte.
+          </p>
+        </div>
+      </div>
+      <style>{`@media(max-width:900px){.process-grid{grid-template-columns:1fr!important}.process-grid>div{text-align:left;display:flex;gap:14px;align-items:flex-start}.process-grid>div>div:first-child{flex-shrink:0;margin:0!important}}`}</style>
+    </section>
+  );
+}
+
+// ── FAQ ──
+function FibaroFAQV2() {
+  const [open, setOpen] = React.useState(null);
+  const faqs = [
+    {q:'¿FÍBARO es un operador de telecomunicaciones?',a:'No. FÍBARO es un asesor y canal comercial independiente. Comparamos tarifas de Jazztel, MASMOVIL, Pepephone y Simyo para encontrar la que mejor encaja contigo. La tarifa que contratas pertenece al operador oficial, que presta el servicio.'},
+    {q:'¿Para qué sirve el asistente IA?',a:'El asistente analiza únicamente las tarifas cargadas desde el catálogo real. Te hace tres preguntas sobre tu uso y perfil, y te recomienda la opción más adecuada con el operador concreto que la ofrece. No inventa tarifas.'},
+    {q:'¿Qué son las líneas adicionales y cómo se calculan?',a:'Muchas tarifas incluyen un número de líneas móviles. Si necesitas más, puedes añadir líneas adicionales. El sistema las calcula usando el catálogo oficial del operador y te muestra el precio exacto por línea extra. Si no hay precio confirmado, te lo indicamos como "requiere revisión comercial".'},
+    {q:'¿El prepedido me obliga a contratar?',a:'No. El prepedido es una reserva de interés. Te llamamos para verificar cobertura y resolver dudas. Nada se contrata hasta que tú lo decides.'},
+    {q:'¿Cuándo me llamáis?',a:'Nuestro equipo te contacta en un máximo de 24 horas laborables desde que dejas el prepedido.'},
+    {q:'¿Puedo ir a la tienda en persona?',a:'Sí. Estamos en Calle Infanta Beatriz nº13, Sanlúcar de Barrameda. Llámanos antes al 633 671 657 o pásate directamente.'},
+  ];
+  return (
+    <section className="section" id="faq" style={{background:'var(--off-white)'}}>
+      <div className="container">
+        <div style={{textAlign:'center',marginBottom:8}}>
+          <div className="section-eyebrow" style={{justifyContent:'center'}}>
+            <div className="eyebrow-line"/>
+            <span className="t-label" style={{color:'var(--blue)'}}>Preguntas frecuentes</span>
+            <div className="eyebrow-line"/>
+          </div>
+          <h2 className="t-h1">Todo claro,<br/><span style={{color:'var(--blue)'}}>sin letra pequeña</span></h2>
+        </div>
+        <div style={{maxWidth:700,margin:'40px auto 0'}}>
+          {faqs.map((f,i)=>(
+            <div className={`faq-item ${open===i?'open':''}`} key={i}>
+              <div className="faq-q" onClick={()=>setOpen(open===i?null:i)}>{f.q}<span className="faq-icon">+</span></div>
+              {open===i && <div className="faq-a" style={{animation:'fadeUp .22s ease both'}}>{f.a}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── CTA Final ──
+function FibaroCTAV2({ onPreorder, onAiOpen }) {
+  return (
+    <section className="section cta-final section-sm" id="prepedido">
+      <div className="cta-glow"/>
+      <div className="container" style={{position:'relative',zIndex:1,textAlign:'center'}}>
+        <div className="section-eyebrow" style={{color:'var(--cyan)',justifyContent:'center'}}>
+          <div className="eyebrow-line" style={{background:'var(--cyan)'}}/>
+          <span className="t-label">Da el primer paso</span>
+          <div className="eyebrow-line" style={{background:'var(--cyan)'}}/>
+        </div>
+        <h2 className="t-h1" style={{color:'#fff',maxWidth:560,margin:'0 auto'}}>¿Listo para conectarte<br/><span className="grad-blue">de verdad?</span></h2>
+        <p className="t-body-lg" style={{color:'rgba(240,244,255,.55)',maxWidth:420,margin:'16px auto 0'}}>
+          Reserva tu prepedido en menos de 2 minutos. Sin compromiso. Te llamamos nosotros.
+        </p>
+        <div style={{display:'flex',gap:14,justifyContent:'center',flexWrap:'wrap',marginTop:36}}>
+          <button className="btn btn-primary btn-lg" onClick={onPreorder}>Reservar prepedido →</button>
+          <button className="btn btn-ghost btn-lg" onClick={onAiOpen}>Asesoramiento IA</button>
+          <a href="tel:633671657" className="btn btn-ghost btn-lg">633 671 657</a>
+        </div>
+        <p style={{color:'rgba(255,255,255,.25)',fontSize:'.75rem',marginTop:24}}>Sin permanencia · Sin compromiso · Atención humana garantizada</p>
+      </div>
+    </section>
+  );
+}
+
+// ── Footer ──
+function FibaroFooterV2() {
+  return (
+    <footer className="footer">
+      <div className="container">
+        <div className="footer-inner">
+          <div>
+            <div className="footer-brand-name" style={{fontSize:'1.35rem',fontWeight:800,color:'#fff',letterSpacing:'-.03em',marginBottom:8}}>FÍ<span style={{color:'var(--cyan)'}}>BARO</span></div>
+            <p style={{fontSize:'.8rem',color:'rgba(255,255,255,.4)',lineHeight:1.6,maxWidth:250}}>
+              Asesor y canal comercial independiente. Comparamos Jazztel, MASMOVIL, Pepephone y Simyo en Sanlúcar de Barrameda.
+            </p>
+            <div style={{marginTop:16,fontSize:'.8rem',color:'rgba(255,255,255,.5)'}}>
+              C/ Infanta Beatriz nº13 · Sanlúcar · 11540<br/>
+              <a href="tel:633671657" style={{color:'var(--blue-lt)',textDecoration:'none',display:'block',marginTop:4}}>633 671 657</a>
+            </div>
+          </div>
+          <div>
+            <div style={{fontSize:'.68rem',fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'rgba(255,255,255,.35)',marginBottom:12}}>Operadores</div>
+            <ul style={{listStyle:'none',display:'flex',flexDirection:'column',gap:7}}>
+              {['Jazztel','MASMOVIL','Pepephone','Simyo'].map(op=>(
+                <li key={op}><a href="#catalogo" style={{color:'rgba(255,255,255,.5)',textDecoration:'none',fontSize:'.82rem',...opColor(op.toUpperCase())&&{color:opColor(op.toUpperCase()).color}}}>{op}</a></li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <div style={{fontSize:'.68rem',fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'rgba(255,255,255,.35)',marginBottom:12}}>Empresa</div>
+            <ul style={{listStyle:'none',display:'flex',flexDirection:'column',gap:7}}>
+              {[['#proceso','Cómo funciona'],['#faq','Preguntas frecuentes'],['#prepedido','Reservar prepedido'],['https://instagram.com/fibaroteleco','@FIBAROTELECO']].map(([h,l])=>(
+                <li key={l}><a href={h} style={{color:'rgba(255,255,255,.5)',textDecoration:'none',fontSize:'.82rem'}} {...(h.startsWith('http')?{target:'_blank',rel:'noopener'}:{})}>{l}</a></li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <div className="footer-bottom">
+          <span className="footer-copy">© 2026 FÍBARO Telecomunicaciones · Canal comercial independiente</span>
+          <span className="footer-copy">FÍBARO no es operador de red · Precios sujetos a catálogo oficial de cada operador</span>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+Object.assign(window, {
+  FibaroNavV2, ImportBanner, FibaroHeroV2, OrbVisual,
+  CatalogSectionV2, PlanCardV2,
+  FibaroTrustV2, FibaroProcessV2, FibaroFAQV2, FibaroCTAV2, FibaroFooterV2
+});
+
+</script>
+<script type="text/babel">
+/* inlined: fibaro-v2-tools.jsx */
+// fibaro-v2-tools.jsx — AI Assistant, Lines Calculator, Preorder Modal
+
+// ── AI Assistant V2 ──
+function FibaroAIV2({ open, onClose, catalog, isDemoMode, onPreorder }) {
+  const [step, setStep] = React.useState('intro');
+  const [answers, setAnswers] = React.useState({});
+  const [msgs, setMsgs] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [rec, setRec] = React.useState(null);
+  const bodyRef = React.useRef(null);
+
+  const addMsg = (role, text, opts) =>
+    setMsgs(m => [...m, { role, text, opts }]);
+
+  React.useEffect(() => {
+    if (open && msgs.length === 0) {
+      const intro = isDemoMode
+        ? 'Hola, soy el asistente de FÍBARO. Cuando importes el catálogo real podré hacer recomendaciones precisas. Por ahora te haré las preguntas de perfil para que veas cómo funciona.'
+        : 'Hola, soy el asistente de FÍBARO. Comparo tarifas reales de Jazztel, MASMOVIL, Pepephone y Simyo. En tres preguntas te digo cuál encaja mejor contigo.';
+      setMsgs([{ role: 'bot', text: intro }]);
+      setTimeout(() => nextStep('q1'), 500);
+    }
+  }, [open]);
+
+  React.useEffect(() => {
+    if (!open) {
+      setTimeout(() => {
+        setStep('intro'); setAnswers({}); setMsgs([]); setRec(null); setLoading(false);
+      }, 420);
+    }
+  }, [open]);
+
+  React.useEffect(() => {
+    if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+  }, [msgs, loading]);
+
+  const questions = {
+    q1: {
+      text: '¿Cuántas personas vais a usar internet en casa?',
+      opts: ['Solo yo', 'Somos 2', '3 o 4 personas', '5 o más personas'],
+      key: 'personas', next: 'q2',
+    },
+    q2: {
+      text: '¿Para qué lo usáis principalmente?',
+      opts: ['Uso básico y redes sociales', 'Teletrabajo y videollamadas', 'Series y streaming intensivo', 'Gaming online'],
+      key: 'uso', next: 'q3',
+    },
+    q3: {
+      text: '¿Qué prioridad tienes?',
+      opts: ['Pagar lo mínimo', 'Buen equilibrio calidad/precio', 'Máximo rendimiento'],
+      key: 'prioridad', next: 'result',
+    },
+  };
+
+  const nextStep = (s) => {
+    setStep(s);
+    if (questions[s]) addMsg('bot', questions[s].text);
+  };
+
+  const handleOpt = async (qKey, opt) => {
+    addMsg('user', opt);
+    const q = questions[qKey];
+    const newAnswers = { ...answers, [q.key]: opt };
+    setAnswers(newAnswers);
+
+    if (q.next === 'result') {
+      setStep('loading');
+      setLoading(true);
+      addMsg('bot', 'Analizando el catálogo…');
+      await getRecommendation(newAnswers);
+    } else {
+      setTimeout(() => nextStep(q.next), 280);
+    }
+  };
+
+  const getRecommendation = async (ans) => {
+    const plans = catalog?.plans || [];
+    const rules = catalog?.rules || [];
+
+    // Try to match rules from 06_REGLAS_IA_BUSCADOR
+    const ahorro = ans.prioridad?.includes('mínimo');
+    const gaming = ans.uso?.includes('Gaming');
+    const streaming = ans.uso?.includes('stream');
+    const teletrabajo = ans.uso?.includes('Teletrabajo');
+    const personas = ans.personas?.includes('5') ? 5 : ans.personas?.includes('3') ? 3 : ans.personas?.includes('2') ? 2 : 1;
+    const premium = ans.prioridad?.includes('rendimiento');
+
+    let matchedPlanIds = [];
+    for (const rule of rules) {
+      const ruleMatches =
+        (ahorro && rule.ahorro === 'sí') ||
+        (streaming && rule.streaming === 'sí') ||
+        (gaming && rule.gaming === 'sí') ||
+        (teletrabajo && rule.teletrabajo === 'sí') ||
+        (premium && rule.premium === 'sí');
+      if (ruleMatches) {
+        const ids = [rule.tarifa_prioritaria_1, rule.tarifa_prioritaria_2, rule.tarifa_prioritaria_3].filter(Boolean);
+        matchedPlanIds = [...matchedPlanIds, ...ids];
+      }
+    }
+
+    // Find matching plans in catalog
+    let candidates = matchedPlanIds.length > 0
+      ? matchedPlanIds.map(id => plans.find(p => p.id_tarifa === id)).filter(Boolean)
+      : [];
+
+    // Fallback: filter by logic
+    if (candidates.length === 0) {
+      candidates = plans.filter(p => {
+        if (!p.recomendable_ia || p.recomendable_ia.toLowerCase() !== 'sí') return false;
+        const speed = parseInt(p.fibra_mb) || 0;
+        const lineas = parseInt(p.num_lineas_incluidas) || 0;
+        if (ahorro && parseFloat(p.precio_final) > 35) return false;
+        if (gaming && speed < 600) return false;
+        if (personas >= 4 && lineas < 2) return false;
+        return true;
+      }).slice(0, 3);
+    }
+
+    if (candidates.length === 0 && plans.length > 0) {
+      candidates = plans.filter(p => p.recomendable_ia?.toLowerCase() === 'sí').slice(0, 2);
+    }
+
+    if (candidates.length === 0) {
+      setLoading(false);
+      setStep('noresult');
+      addMsg('bot', isDemoMode
+        ? 'En modo demo no puedo hacer una recomendación real. Importa el Excel maestro para activar el recomendador con datos de operadores reales.'
+        : 'No he encontrado una tarifa que encaje claramente con tu perfil en el catálogo actual. Te recomiendo que nuestro equipo te asesore directamente. Puedes llamarnos al 633 671 657.');
+      return;
+    }
+
+    // Use Claude to generate recommendation text
+    const topPlan = candidates[0];
+    const candidatesSummary = candidates.slice(0, 3).map(p =>
+      `- ${p.marca_comercial||p.operador}: ${p.nombre_tarifa} | ${p.fibra_mb}Mb | ${p.num_lineas_incluidas} líneas | €${p.precio_final}/mes`
+    ).join('\n');
+
+    const prompt = `Eres el asesor comercial de FÍBARO, una empresa de asesoramiento de telecomunicaciones en Sanlúcar de Barrameda. FÍBARO no es operador; compara y tramita tarifas de distintas compañías.
+
+PERFIL DEL USUARIO:
+- Personas en casa: ${ans.personas}
+- Uso principal: ${ans.uso}
+- Prioridad: ${ans.prioridad}
+
+TARIFAS CANDIDATAS DEL CATÁLOGO OFICIAL:
+${candidatesSummary}
+
+Genera SOLO un JSON válido con esta estructura exacta:
+{"plan_id":"${candidates.map(p=>p.id_tarifa).join('|')}","operador":"nombre del operador","tarifa":"nombre de la tarifa","motivo":"1-2 frases explicando por qué encaja con el perfil","cierre":"1 frase invitando a reservar, mencionando que FÍBARO tramita todo"}
+
+Solo JSON. Sin texto adicional. Menciona siempre el operador real (${topPlan.operador}).`;
+
+    try {
+      const raw = await window.claude.complete(prompt);
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error('No JSON');
+      const parsed = JSON.parse(match[0]);
+      const foundPlan = plans.find(p => p.id_tarifa === parsed.plan_id) || topPlan;
+      setRec({ plan: foundPlan, motivo: parsed.motivo, cierre: parsed.cierre, alternatives: candidates.slice(1, 3) });
+    } catch {
+      setRec({ plan: topPlan, motivo: `Con tu perfil de ${ans.personas} y uso de ${ans.uso}, la tarifa ${topPlan.nombre_tarifa} de ${topPlan.operador} ofrece el mejor equilibrio.`, cierre: 'FÍBARO tramita todo el proceso con el operador. Solo tienes que reservar.', alternatives: candidates.slice(1, 3) });
+    }
+
+    setLoading(false);
+    setStep('result');
+  };
+
+  const speedLabel = s => parseInt(s) >= 1000 ? `${parseInt(s)/1000} Gb` : `${s} Mb`;
+
+  return (
+    <>
+      {open && <div className="ai-backdrop" onClick={onClose} style={{animation:'fadeIn .25s ease'}} />}
+      <div className={`ai-panel ${open ? 'ai-panel-open' : 'ai-panel-closed'}`} role="dialog">
+        {/* Header */}
+        <div className="ai-header">
+          <div className="ai-avatar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="3" fill="white"/>
+              <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div style={{fontWeight:700,fontSize:'.9rem',color:'#fff'}}>Asistente FÍBARO</div>
+            <div style={{fontSize:'.72rem',color:'rgba(255,255,255,.45)',display:'flex',alignItems:'center',gap:5,marginTop:1}}>
+              <span style={{color:'#22C55E',fontSize:'.65rem'}}>●</span>
+              {isDemoMode ? 'Modo demo' : 'Catálogo real activo'}
+            </div>
+          </div>
+          <button onClick={onClose} style={{marginLeft:'auto',background:'rgba(255,255,255,.07)',border:'1px solid rgba(255,255,255,.1)',borderRadius:8,color:'rgba(255,255,255,.6)',width:30,height:30,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem',flexShrink:0,transition:'var(--transition)'}}>✕</button>
+        </div>
+
+        {/* Messages */}
+        <div className="ai-body" ref={bodyRef}>
+          {msgs.map((m, i) => (
+            <div key={i} className={`ai-bubble ${m.role==='bot'?'ai-bubble-bot':'ai-bubble-user'}`} style={{animation:'fadeUp .25s ease both'}}>
+              {m.text}
+            </div>
+          ))}
+
+          {loading && (
+            <div className="ai-bubble ai-bubble-bot">
+              <div className="ai-typing" style={{display:'flex',gap:4}}>
+                <span/><span/><span/>
+              </div>
+            </div>
+          )}
+
+          {/* Options for current question */}
+          {!loading && step !== 'result' && step !== 'noresult' && questions[step] && (
+            <div className="ai-opts" style={{animation:'fadeUp .28s ease both'}}>
+              {questions[step].opts.map((opt, i) => (
+                <button key={i} className="ai-opt" onClick={() => handleOpt(step, opt)}
+                  style={{animationDelay:`${i*.05}s`}}>{opt}</button>
+              ))}
+            </div>
+          )}
+
+          {/* Recommendation result */}
+          {step === 'result' && rec && (
+            <div style={{animation:'fadeUp .35s ease both', display:'flex', flexDirection:'column', gap:10}}>
+              <div className="ai-bubble ai-bubble-bot">{rec.motivo}</div>
+              <div className="ai-rec-card">
+                {/* Operator badge */}
+                {(() => {
+                  const op = (rec.plan.operador||'').toUpperCase();
+                  const oc = (window.OP_COLORS||{})[op] || {color:'#64748B',bg:'rgba(100,116,139,.1)',border:'rgba(100,116,139,.22)'};
+                  return (
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                      <span style={{fontSize:'.7rem',fontWeight:800,letterSpacing:'.05em',textTransform:'uppercase',color:oc.color,background:oc.bg,border:`1px solid ${oc.border}`,padding:'3px 10px',borderRadius:6}}>
+                        {rec.plan.marca_comercial || rec.plan.operador}
+                      </span>
+                      <span style={{fontSize:'.7rem',color:'var(--cyan)',fontWeight:600}}>Recomendada</span>
+                    </div>
+                  );
+                })()}
+                <div style={{fontWeight:800,fontSize:'1rem',color:'#fff',marginBottom:3}}>{rec.plan.nombre_tarifa}</div>
+                {rec.plan.fibra_mb && <div style={{fontSize:'.78rem',color:'var(--cyan)',fontWeight:600,marginBottom:10}}>{speedLabel(rec.plan.fibra_mb)} · {rec.plan.num_lineas_incluidas} línea{parseInt(rec.plan.num_lineas_incluidas)>1?'s':''} · €{parseFloat(rec.plan.precio_final||rec.plan.precio_tramo_1).toFixed(2)}/mes</div>}
+                <div style={{fontSize:'.82rem',color:'rgba(255,255,255,.68)',lineHeight:1.55,marginBottom:14}}>{rec.cierre}</div>
+                <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',fontSize:'.85rem'}} onClick={() => { onPreorder(rec.plan, null); onClose(); }}>
+                  Reservar esta tarifa →
+                </button>
+              </div>
+              {rec.alternatives?.length > 0 && (
+                <div style={{fontSize:'.78rem',color:'rgba(255,255,255,.45)',marginTop:2}}>
+                  También podrían interesarte:{' '}
+                  {rec.alternatives.map((p,i) => (
+                    <button key={i} onClick={() => { onPreorder(p, null); onClose(); }}
+                      style={{background:'none',border:'none',color:'rgba(255,255,255,.65)',fontSize:'.78rem',cursor:'pointer',textDecoration:'underline',fontFamily:'var(--font)',padding:'0 4px'}}>
+                      {p.nombre_tarifa}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div style={{display:'flex',gap:7,flexWrap:'wrap',marginTop:4}}>
+                <button className="ai-opt" style={{fontSize:'.75rem'}} onClick={() => {
+                  setStep('q1'); setAnswers({}); setMsgs([{role:'bot',text:questions.q1.text}]); setRec(null);
+                }}>Repetir test</button>
+                <button className="ai-opt" style={{fontSize:'.75rem'}} onClick={onClose}>Ver catálogo completo</button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="ai-footer">
+          <p style={{fontSize:'.7rem',color:'rgba(255,255,255,.28)',textAlign:'center',lineHeight:1.5}}>
+            El asistente usa únicamente tarifas del catálogo oficial importado. No inventa precios ni condiciones. FÍBARO actúa como asesor, no como operador.
+          </p>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── Lines Calculator Modal ──
+function LinesCalcModal({ plan, lineas, onClose, onPreorder }) {
+  const included = parseInt(plan.num_lineas_incluidas) || 0;
+  const [totalLines, setTotalLines] = React.useState(included + 1);
+  const [selectedLineOpt, setSelectedLineOpt] = React.useState(null);
+
+  const extraNeeded = Math.max(0, totalLines - included);
+  const { lines: opts, matchType } = window.findLineasAdicionales(plan, lineas);
+
+  React.useEffect(() => {
+    if (opts.length > 0 && !selectedLineOpt) setSelectedLineOpt(opts[0].id_linea_adicional);
+  }, [opts]);
+
+  const selectedOpt = opts.find(o => o.id_linea_adicional === selectedLineOpt);
+  const pricePerLine = selectedOpt ? parseFloat(selectedOpt.precio_final) : null;
+  const basePrice = parseFloat(plan.precio_tramo_1) || parseFloat(plan.precio_final) || 0;
+  const extraCost = (pricePerLine !== null && extraNeeded > 0) ? pricePerLine * extraNeeded : null;
+  const totalPrice = (extraCost !== null) ? basePrice + extraCost : null;
+
+  const matchLabels = { id:'coincidencia exacta por tarifa', familia:'coincidencia por familia de tarifa', subfamilia:'por subfamilia', operador:'opciones generales del operador', none:'' };
+
+  const calcResult = selectedOpt && extraNeeded > 0 ? {
+    basePrice, extraNeeded, pricePerLine, extraCost, totalPrice,
+    lineName: selectedOpt.nombre_opcion_linea,
+    gbPerLine: selectedOpt.gb_linea_adicional,
+    matchType,
+  } : null;
+
+  return (
+    <div className="modal-overlay" onClick={e => { if(e.target===e.currentTarget) onClose(); }}>
+      <div className="modal-box">
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
+          <div>
+            <h3 style={{fontSize:'1.3rem',fontWeight:800,letterSpacing:'-.02em',color:'var(--ink)'}}>Calcular líneas adicionales</h3>
+            <p style={{fontSize:'.82rem',color:'#64748B',marginTop:4}}>{plan.nombre_tarifa}</p>
+          </div>
+          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',fontSize:'1.4rem',color:'#94A3B8',padding:'4px 8px'}}>✕</button>
+        </div>
+
+        {/* Included lines info */}
+        <div style={{background:'var(--off-white)',borderRadius:10,padding:'12px 16px',marginBottom:16,fontSize:'.85rem',color:'#374151'}}>
+          <strong>Líneas incluidas en esta tarifa: {included}</strong>
+          {plan.gb_linea_principal && <span style={{color:'#64748B'}}> · {plan.gb_linea_principal} GB por línea</span>}
+        </div>
+
+        {/* Total lines selector */}
+        <div className="form-group">
+          <label className="form-label">¿Cuántas líneas necesitas en total?</label>
+          <div style={{display:'flex',alignItems:'center',gap:12}}>
+            <button onClick={()=>setTotalLines(t=>Math.max(included+1,t-1))} className="btn btn-outline btn-sm" style={{width:36,padding:'8px',justifyContent:'center'}}>−</button>
+            <span style={{fontSize:'1.4rem',fontWeight:800,minWidth:32,textAlign:'center'}}>{totalLines}</span>
+            <button onClick={()=>setTotalLines(t=>t+1)} className="btn btn-outline btn-sm" style={{width:36,padding:'8px',justifyContent:'center'}}>+</button>
+            <span style={{fontSize:'.82rem',color:'#64748B'}}>({extraNeeded} extra{extraNeeded!==1?'s':''} sobre las {included} incluidas)</span>
+          </div>
+        </div>
+
+        {/* Line options */}
+        {opts.length === 0 ? (
+          <div className="revision-warn">
+            <strong>Revisión comercial requerida</strong><br/>
+            No se han encontrado opciones de línea adicional para esta tarifa en el catálogo actual. Nuestro equipo te dará precio exacto al llamarte.
+          </div>
+        ) : (
+          <>
+            <div className="form-group">
+              <label className="form-label">Elige el tipo de línea adicional ({matchLabels[matchType]})</label>
+              <div className="lines-options">
+                {opts.map(opt => {
+                  const price = parseFloat(opt.precio_final);
+                  const free = price === 0;
+                  return (
+                    <div key={opt.id_linea_adicional}
+                      className={`lines-opt-card ${selectedLineOpt===opt.id_linea_adicional?'selected':''}`}
+                      onClick={()=>setSelectedLineOpt(opt.id_linea_adicional)}
+                      style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}
+                    >
+                      <div>
+                        <div style={{fontWeight:700,fontSize:'.88rem',color:'var(--ink)'}}>{opt.nombre_opcion_linea || `${opt.gb_linea_adicional} GB`}</div>
+                        <div style={{fontSize:'.75rem',color:'#94A3B8',marginTop:2}}>
+                          {opt.gb_linea_adicional} GB · {opt.llamadas_movil_linea_adicional||'según tarifa'}
+                          {opt.comparte_gb==='sí' && ' · GB compartidos'}
+                        </div>
+                      </div>
+                      <div style={{textAlign:'right',flexShrink:0,marginLeft:16}}>
+                        <div style={{fontWeight:800,fontSize:'1rem',color: free?'#059669':'var(--blue)'}}>
+                          {free ? 'Gratis' : `€${price.toFixed(2)}/línea`}
+                        </div>
+                        {extraNeeded > 1 && !free && <div style={{fontSize:'.7rem',color:'#94A3B8'}}>×{extraNeeded} = €{(price*extraNeeded).toFixed(2)}</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Price summary */}
+            {extraNeeded > 0 && selectedOpt && (
+              <div className="lines-summary">
+                <div className="lines-sum-row">
+                  <span>Tarifa base ({plan.nombre_tarifa})</span>
+                  <span>€{basePrice.toFixed(2)}/mes</span>
+                </div>
+                <div className="lines-sum-row">
+                  <span>{included} línea{included!==1?'s':''} incluida{included!==1?'s':''}</span>
+                  <span style={{color:'#059669'}}>Incluidas</span>
+                </div>
+                <div className="lines-sum-row">
+                  <span>{extraNeeded} línea{extraNeeded!==1?'s':''} extra × {pricePerLine===0?'gratis':`€${pricePerLine?.toFixed(2)}`}</span>
+                  <span>{extraCost===0?'€0,00':`€${extraCost?.toFixed(2)}/mes`}</span>
+                </div>
+                <div className="lines-sum-row" style={{paddingTop:10,marginTop:6,borderTop:'1px solid var(--border-light)'}}>
+                  <span>Total estimado ({totalLines} líneas)</span>
+                  <span style={{color:'var(--blue)',fontSize:'1.1rem'}}>€{totalPrice?.toFixed(2)}/mes</span>
+                </div>
+                <p style={{fontSize:'.7rem',color:'#94A3B8',marginTop:8,lineHeight:1.4}}>
+                  {(plan.iva_incluido||'').toLowerCase()==='sí' ? 'IVA incluido' : '+IVA'} · Precio según catálogo {plan.operador} · Sujeto a cobertura y condiciones del operador
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+        <div style={{display:'flex',gap:10,marginTop:20,flexWrap:'wrap'}}>
+          <button className="btn btn-outline" style={{flex:1,justifyContent:'center'}} onClick={onClose}>Volver al catálogo</button>
+          <button className="btn btn-primary" style={{flex:2,justifyContent:'center'}} onClick={() => onPreorder(plan, calcResult)}>
+            Reservar con {totalLines} líneas →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Preorder Modal V2 ──
+function PreorderModalV2({ plan, calcResult, onClose }) {
+  const [form, setForm] = React.useState({ nombre:'', telefono:'', direccion:'', operador: plan?.operador||'', tarifa: plan?.id_tarifa||'', lineas_total: calcResult ? (parseInt(plan?.num_lineas_incluidas||0) + (calcResult.extraNeeded||0)) : '', comentario:'' });
+  const [sent, setSent] = React.useState(false);
+  const [sending, setSending] = React.useState(false);
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  React.useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  React.useEffect(() => {
+    if (plan) {
+      set('operador', plan.operador || plan.marca_comercial || '');
+      set('tarifa', plan.nombre_tarifa || plan.id_tarifa || '');
+    }
+  }, [plan]);
+
+  const isValid = form.nombre.trim() && form.telefono.trim() && form.direccion.trim();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!isValid) return;
+    setSending(true);
+    await new Promise(r => setTimeout(r, 1200));
+    setSending(false); setSent(true);
+  };
+
+  const now = new Date().toLocaleString('es-ES', { dateStyle:'short', timeStyle:'short' });
+
+  return (
+    <div className="modal-overlay" onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+      <div className="modal-box" style={{maxWidth:580}}>
+        {sent ? (
+          <div style={{textAlign:'center',padding:'16px 0'}}>
+            <div style={{width:68,height:68,borderRadius:'50%',background:'linear-gradient(135deg,#2563EB,#06B6D4)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',boxShadow:'0 8px 28px rgba(37,99,235,.4)'}}>
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="9" stroke="white" strokeWidth="2"/></svg>
+            </div>
+            <h3 style={{fontSize:'1.35rem',fontWeight:800,color:'var(--ink)',marginBottom:10}}>¡Prepedido recibido!</h3>
+            <p style={{color:'#64748B',fontSize:'.9rem',lineHeight:1.65,marginBottom:20}}>
+              Hemos registrado tu interés{plan ? ` en <strong>${plan.nombre_tarifa}</strong> de <strong>${plan.operador||plan.marca_comercial}</strong>` : ''}. Nuestro equipo te llamará al <strong>{form.telefono}</strong> en menos de 24 horas para verificar cobertura y cerrar los detalles.
+            </p>
+            {calcResult && (
+              <div style={{background:'var(--off-white)',borderRadius:12,padding:'14px',marginBottom:20,textAlign:'left',fontSize:'.83rem',color:'#374151'}}>
+                <strong style={{display:'block',marginBottom:8}}>Resumen de tu configuración:</strong>
+                <div>Tarifa base: €{calcResult.basePrice?.toFixed(2)}/mes</div>
+                <div>{calcResult.extraNeeded} líneas extra ({calcResult.lineName}) → €{calcResult.extraCost?.toFixed(2)}/mes</div>
+                <div style={{fontWeight:700,marginTop:6,color:'var(--blue)'}}>Total estimado: €{calcResult.totalPrice?.toFixed(2)}/mes</div>
+              </div>
+            )}
+            <div style={{background:'#F8FAFC',borderRadius:10,padding:'12px 16px',textAlign:'left',fontSize:'.82rem',color:'#64748B',lineHeight:1.65,marginBottom:20}}>
+              <strong style={{color:'var(--ink)'}}>Recuerda:</strong><br/>
+              — No has contraído ningún compromiso<br/>
+              — Puedes llamarnos al <a href="tel:633671657" style={{color:'var(--blue)',fontWeight:600}}>633 671 657</a><br/>
+              — O visitar nuestra tienda en C/ Infanta Beatriz nº13
+            </div>
+            <button className="btn btn-primary" style={{width:'100%',justifyContent:'center'}} onClick={onClose}>Entendido, gracias</button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16}}>
+              <div>
+                <h3 style={{fontSize:'1.35rem',fontWeight:800,letterSpacing:'-.025em',color:'var(--ink)'}}>Reservar prepedido</h3>
+                <p style={{fontSize:'.82rem',color:'#64748B',marginTop:4}}>Sin compromiso. Te llamamos nosotros.</p>
+              </div>
+              <button type="button" onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',fontSize:'1.4rem',color:'#94A3B8',padding:'4px 8px'}}>✕</button>
+            </div>
+
+            {/* Plan summary */}
+            {plan && (
+              <div className="preorder-plan-badge">
+                {(() => {
+                  const op = (plan.operador||'').toUpperCase();
+                  const oc = {MASMOVIL:{color:'#EA580C'},JAZZTEL:{color:'#DC2626'},SIMYO:{color:'#0891B2'},PEPEPHONE:{color:'#7C3AED'}}[op]||{color:'#64748B'};
+                  return <span style={{fontWeight:800,fontSize:'.82rem',color:oc.color}}>{plan.marca_comercial||plan.operador}</span>;
+                })()}
+                <span style={{fontWeight:700,fontSize:'.88rem',color:'var(--ink)',flex:1}}>{plan.nombre_tarifa}</span>
+                {calcResult ? (
+                  <span style={{fontWeight:800,fontSize:'.95rem',color:'var(--blue)'}}>€{calcResult.totalPrice?.toFixed(2)}/mes</span>
+                ) : (
+                  <span style={{fontWeight:700,fontSize:'.9rem',color:'#374151'}}>€{parseFloat(plan.precio_final||plan.precio_tramo_1||0).toFixed(2)}/mes</span>
+                )}
+              </div>
+            )}
+
+            {/* Calc summary if present */}
+            {calcResult && (
+              <div style={{background:'rgba(37,99,235,.05)',border:'1px solid rgba(37,99,235,.15)',borderRadius:10,padding:'12px 14px',marginBottom:16,fontSize:'.8rem',color:'#374151',lineHeight:1.65}}>
+                <strong>Configuración con líneas adicionales:</strong><br/>
+                Base: €{calcResult.basePrice?.toFixed(2)} + {calcResult.extraNeeded} línea{calcResult.extraNeeded!==1?'s':''} extra ({calcResult.lineName||calcResult.gbPerLine+' GB'}) × €{calcResult.pricePerLine?.toFixed(2)} = <strong style={{color:'var(--blue)'}}>€{calcResult.totalPrice?.toFixed(2)}/mes</strong>
+              </div>
+            )}
+
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0 16px'}}>
+              <div className="form-group" style={{gridColumn:'1/-1'}}>
+                <label className="form-label">Nombre completo *</label>
+                <input className="form-input" type="text" placeholder="Tu nombre" value={form.nombre} onChange={e=>set('nombre',e.target.value)} required/>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Teléfono *</label>
+                <input className="form-input" type="tel" placeholder="6XX XXX XXX" value={form.telefono} onChange={e=>set('telefono',e.target.value)} required/>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Líneas deseadas</label>
+                <input className="form-input" type="number" min="1" placeholder="Nº de líneas" value={form.lineas_total} onChange={e=>set('lineas_total',e.target.value)}/>
+              </div>
+              <div className="form-group" style={{gridColumn:'1/-1'}}>
+                <label className="form-label">Dirección de instalación *</label>
+                <input className="form-input" type="text" placeholder="Calle, número, localidad" value={form.direccion} onChange={e=>set('direccion',e.target.value)} required/>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Comentario (opcional)</label>
+              <textarea className="form-input" placeholder="¿Alguna duda o aclaración?" value={form.comentario} onChange={e=>set('comentario',e.target.value)} rows={2}/>
+            </div>
+
+            {/* Hidden: fecha/hora */}
+            <input type="hidden" value={now}/>
+
+            <button type="submit" className="btn btn-primary btn-lg" disabled={!isValid||sending} style={{width:'100%',justifyContent:'center',opacity:(!isValid||sending)?.6:1}}>
+              {sending ? (
+                <><span style={{width:16,height:16,border:'2px solid rgba(255,255,255,.4)',borderTop:'2px solid #fff',borderRadius:'50%',animation:'ringRot .7s linear infinite',display:'inline-block'}}/> Enviando…</>
+              ) : 'Enviar prepedido →'}
+            </button>
+
+            <div className="modal-note">
+              <strong style={{color:'var(--ink)'}}>Sin compromiso.</strong> Este prepedido no es un contrato. FÍBARO verificará tu cobertura y te llamará para tramitar el alta con el operador elegido, cuando tú lo decidas.
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Expose OP_COLORS for use in AI component
+window.OP_COLORS = {
+  MASMOVIL:  { color:'#EA580C', bg:'rgba(234,88,12,.1)',  border:'rgba(234,88,12,.22)'  },
+  JAZZTEL:   { color:'#DC2626', bg:'rgba(220,38,38,.1)',  border:'rgba(220,38,38,.22)'  },
+  SIMYO:     { color:'#0891B2', bg:'rgba(8,145,178,.1)',  border:'rgba(8,145,178,.22)'  },
+  PEPEPHONE: { color:'#7C3AED', bg:'rgba(124,58,237,.1)', border:'rgba(124,58,237,.22)' },
+  DEMO:      { color:'#64748B', bg:'rgba(100,116,139,.1)',border:'rgba(100,116,139,.22)'},
+};
+
+Object.assign(window, { FibaroAIV2, LinesCalcModal, PreorderModalV2 });
+
+</script>
+
+<script type="text/babel">
+function App() {
+  const [catalog, setCatalog] = React.useState(null); // null = no importado
+  const [importMeta, setImportMeta] = React.useState(null);
+  const [aiOpen, setAiOpen] = React.useState(false);
+  const [preorderData, setPreorderData] = React.useState(null); // {plan, calcResult}
+  const [calcData, setCalcData] = React.useState(null); // plan para calcular líneas
+  const fileRef = React.useRef(null);
+
+  const isDemoMode = catalog === null;
+  const activePlans = isDemoMode ? window.DEMO_PLANS : catalog.plans;
+  const activeLineas = catalog?.lineas || [];
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const result = await window.parseExcel(file);
+      setCatalog(result);
+      setImportMeta({ fileName: file.name, ...result.stats, warnings: result.warnings, operadores: result.operadores });
+    } catch(err) {
+      alert('Error al leer el Excel: ' + err.message);
+    }
+    e.target.value = '';
+  };
+
+  const openPreorder = (plan, calcResult) => setPreorderData({ plan, calcResult });
+  const openCalc = (plan) => setCalcData(plan);
+
+  return (
+    <>
+      <FibaroNavV2 onAiOpen={() => setAiOpen(true)} onImport={() => fileRef.current?.click()} />
+      <input type="file" accept=".xlsx" ref={fileRef} className="import-file-input" onChange={handleFileSelect} />
+
+      <ImportBanner
+        isDemoMode={isDemoMode}
+        importMeta={importMeta}
+        onImportClick={() => fileRef.current?.click()}
+      />
+
+      <FibaroHeroV2 onAiOpen={() => setAiOpen(true)} isDemoMode={isDemoMode} />
+      <FibaroTrustV2 />
+      <CatalogSectionV2
+        plans={activePlans}
+        lineas={activeLineas}
+        promos={catalog?.promos || []}
+        isDemoMode={isDemoMode}
+        onPreorder={openPreorder}
+        onCalc={openCalc}
+      />
+      <FibaroProcessV2 />
+      <FibaroFAQV2 />
+      <FibaroCTAV2 onPreorder={() => openPreorder(null, null)} onAiOpen={() => setAiOpen(true)} />
+      <FibaroFooterV2 />
+
+      <button className="ai-fab" onClick={() => setAiOpen(true)} aria-label="Asistente IA">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="3" fill="white"/>
+          <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      </button>
+
+      <FibaroAIV2
+        open={aiOpen}
+        onClose={() => setAiOpen(false)}
+        catalog={catalog}
+        isDemoMode={isDemoMode}
+        onPreorder={openPreorder}
+      />
+
+      {calcData && (
+        <LinesCalcModal
+          plan={calcData}
+          lineas={activeLineas}
+          onClose={() => setCalcData(null)}
+          onPreorder={(plan, cr) => { setCalcData(null); openPreorder(plan, cr); }}
+        />
+      )}
+
+      {preorderData !== null && (
+        <PreorderModalV2
+          plan={preorderData?.plan}
+          calcResult={preorderData?.calcResult}
+          onClose={() => setPreorderData(null)}
+        />
+      )}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
