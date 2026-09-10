@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /area-cliente
+Sitemap: https://www.fibaroteleco.com/sitemap.xml
