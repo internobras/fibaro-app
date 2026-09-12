@@ -6,7 +6,7 @@ const intro=$('#intro'),count=$('#introCount');let n=0;const timer=setInterval((
 
 const menu=$('#menuBtn'),mobile=$('#mobileNav');menu?.addEventListener('click',()=>mobile?.classList.toggle('open'));$$('#mobileNav a').forEach(a=>a.addEventListener('click',()=>mobile?.classList.remove('open')));
 
-fetch('/alicia.b64?v=20260913-1',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('photo');return r.text()}).then(s=>{$$('.alicia').forEach(i=>{i.src='data:image/webp;base64,'+s.trim()})}).catch(()=>{});
+$$('.alicia').forEach(i=>{i.src='/alicia.webp?v=20260913-2'});
 
 const path=location.pathname.replace(/^\/+|\/+$/g,'');
 if(path==='area-cliente'){location.replace(PANEL);return}
