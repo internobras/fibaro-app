@@ -321,8 +321,7 @@ function cleanPdfText(value) {
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2013\u2014]/g, '-')
-    .replace(/\u00A0/g, ' ')
-    .replace(/[^\x20-\x7E\xA0-\xFF]/g, '');
+    .replace(/\u00A0/g, ' ');
 }
 
 function validateBeforeGenerate(postes) {
@@ -343,6 +342,7 @@ function validateBeforeGenerate(postes) {
   if(val('rp-nombre').trim().toLocaleLowerCase()!==rp[0].nombre.trim().toLocaleLowerCase())return fail(document.getElementById('rp-nombre'),'El nombre del firmante debe coincidir con el técnico marcado como RP.');
   if(!document.querySelector('.epi-check:checked')&&!val('epi-otros').trim())return fail(document.querySelector('.epi-check'),'Indica los equipos de protección de la actividad.');
   if(!document.getElementById('epi-confirm').checked)return fail(document.getElementById('epi-confirm'),'Confirma la revisión de los equipos de protección.');
+  if(postes.some(p=>p.medio==='ESCALERA') && radio('mep3')==='SI' && (!document.querySelector('[data-key="epiArnes"]').checked || !(document.querySelector('[data-key="epiLineaVida"]').checked || document.querySelector('[data-key="epiPertiga"]').checked)))return fail(document.querySelector('[data-key="epiArnes"]'),'Para declarar los EPI adecuados con escalera, indica arnés y línea de vida según el reverso del parte.');
   if(!postes.length)return fail(document.querySelector('[data-add-poste]'),'Añade al menos un poste.');
   const cards=[...document.querySelectorAll('.poste-card')];
   for(const [i,p] of postes.entries()) {
@@ -405,6 +405,8 @@ async function generarPDF() {
       mep1: radio('mep1'), mep2: radio('mep2'), mep3: radio('mep3'),
       obs9: val('obs9'), tel: val('tel112'), rpNombre: val('rp-nombre'), rpNif: val('rp-nif')
     };
+    const textError=validatePdfCapacity(font,general,postes);
+    if(textError){setStatus(textError,'error');return;}
 
     const [plantillaRes, reversoRes] = await Promise.all([fetch('/tecnicos/herramientas/parte-postes/plantilla.png'), fetch('/tecnicos/herramientas/parte-postes/reverso.png')]);
     if (!plantillaRes.ok || !reversoRes.ok) throw new Error('No se han podido cargar las plantillas del parte.');
@@ -592,7 +594,7 @@ function saveRememberedData() {
   if (!toggle.checked) { try {localStorage.removeItem(REMEMBER_KEY);} catch(_) {} return; }
   const data = {remember:true};
   REMEMBER_IDS.forEach(id => data[id] = val(id));
-  const first = document.querySelector('.persona-row');
+  const first = document.querySelector('.persona-row input[name^="p-rp-"][value="SI"]:checked')?.closest('.persona-row') || document.querySelector('.persona-row');
   if (first) { data.personaNombre = first.querySelector('.p-nombre').value; data.personaCategoria = first.querySelector('.p-categoria').value; }
   try { localStorage.setItem(REMEMBER_KEY, JSON.stringify(data)); } catch (_) { setStatus('El navegador no permite recordar datos. Puedes seguir generando partes.'); }
 }
@@ -611,7 +613,7 @@ function restoreRememberedData() {
 }
 
 
-const WIDTHS={nPoste:39,nLinea:32,direccion:185,provincia:119,poblacion:52,empresa:255,unidad:47,nactuacion:30,fecha:49,hora:46,central:155,trabajo:205,altura:23,personaNombre1:241,personaNombre2:241,personaCategoria1:101,personaCategoria2:101,rpNombre:248,rpNif:266,firmaLinea:300};
+const WIDTHS={nPoste:39,nLinea:32,direccion:185,provincia:119,poblacion:52,empresa:255,unidad:47,nactuacion:30,fecha:49,hora:46,central:155,trabajo:205,altura:23,personaNombre1:241,personaNombre2:241,personaCategoria1:101,personaCategoria2:101,rpNombre:248,rpNif:266,firmaLinea:300,sec7obs:300,epiOtrosTxt:85,telefono:110};
 for(const [key,width] of Object.entries(WIDTHS)){TXT[key].width=width;delete TXT[key].maxWidth;}
 for(const key of Object.keys(WIDTHS))if(key!=='firmaLinea')TXT[key].y+=1.4;
 const WOOD_LABELS=['Cable, riostras, soportes, herrajes y tubos revisados','Longitud enterrada conforme (botón / placa)','Terreno escarbado 3 cm e inspección visual conforme','Al empujarlo no se mueve ni cruje','Percusión: sonido claro, madera en buen estado','Punzón: opone resistencia, sin descomposición'];
@@ -619,6 +621,25 @@ function woodFields(id){return WOOD_LABELS.map((label,i)=>`<div class="field"><l
 const LADDER_LABELS=['Revisión de escalera vigente y acreditada','Escalera en buen estado, sin defectos','Terreno firme o estabilidad asegurada con zapatas','Suelo despejado y apoyo estable','Inclinación correcta (aprox. 75°)','Longitud adecuada','Zona de trabajo señalizada','¿Se puede usar la escalera con seguridad?'];
 function accessFields(id){return `<div class="field"><label>Medio de acceso de este poste</label><div class="medio-toggle"><label><input type="radio" name="medio-${id}" value="ESCALERA">Escalera con patas estabilizadoras</label><label><input type="radio" name="medio-${id}" value="PEMP">PEMP</label></div></div><div class="ladder-checks"><h3>Comprobación de la escalera</h3>${LADDER_LABELS.map((label,i)=>`<div class="field"><label>${label}</label><div class="yn">${['SI','NO',...(i===2?['NA']:[])].map(v=>`<label class="opt"><input type="radio" name="s7${i===7?'final':'abcdefg'[i]}-${id}" value="${v}">${v==='SI'?'Sí':v==='NO'?'No':'No aplica'}</label>`).join('')}</div></div>`).join('')}<div class="field"><label>Otras circunstancias que hagan inseguro el trabajo</label><input type="text" class="ladder-obs" maxlength="130" placeholder="Indica cualquier incidencia"></div></div>`;}
 function groupLabel(name){const e=document.querySelector('[name="'+name+'"]');return e?.closest('.field,.sec7-row')?.querySelector('label,.txt')?.textContent || name;}
+function validatePdfCapacity(font,g,postes){
+  const fields=[];
+  for(const key of ['empresa','unidad','provincia','poblacion','nactuacion','central','trabajo'])fields.push([document.getElementById(key),TXT[key].width,1]);
+  for(const row of document.querySelectorAll('.persona-row')){fields.push([row.querySelector('.p-nombre'),241,1],[row.querySelector('.p-categoria'),101,1]);}
+  fields.push([document.getElementById('rp-nombre'),248,1],[document.getElementById('rp-nif'),266,1],[document.getElementById('obs9'),150,2],[document.getElementById('epi-otros'),85,1],[document.getElementById('tel112'),110,1]);
+  for(const card of document.querySelectorAll('.poste-card')){
+    for(const [sel,width,lines] of [['.poste-num',39,1],['.poste-linea',32,1],['.poste-altura',23,1],['.poste-just',500,3],['.ladder-obs',300,1]])fields.push([card.querySelector(sel),width,lines]);
+    fields.push([card.querySelector('.poste-direccion').value.trim()?card.querySelector('.poste-direccion'):document.getElementById('direccion'),185,1]);
+  }
+  for(const [el,width,lines] of fields){
+    const value=el.value.trim();
+    // Reject unsupported glyphs and unreadable shrinking instead of silently losing text.
+    let encoded=true;try{font.encodeText(value);}catch(_){encoded=false;}
+    let count=1,line='';
+    if(encoded && lines>1)for(const word of value.split(/\s+/)){const test=line?line+' '+word:word;if(font.widthOfTextAtSize(test,7)>width){count++;line=word;}else line=test;}
+    if(!encoded || count>lines || font.widthOfTextAtSize(value,lines===1?5:7)>width*lines){el.setAttribute('aria-invalid','true');el.scrollIntoView({block:'center'});el.focus({preventScroll:true});return (el.labels?.[0]?.textContent||'Texto')+': '+(!encoded?'contiene caracteres que no admite el formulario.':'abrevia el texto para que quepa de forma legible en el formulario oficial.');}
+  }
+  return '';
+}
 function labelFields(){
   document.querySelectorAll('.field').forEach((field,i)=>{const label=field.querySelector('label');const input=field.querySelector('input:not([type=radio]),textarea,select');if(label&&input){if(!input.id)input.id='field-'+i;label.htmlFor=input.id;}});
   document.querySelectorAll('input[type=text]').forEach(e=>{if(!e.maxLength||e.maxLength<0)e.maxLength=80;});
