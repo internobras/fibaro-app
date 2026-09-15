@@ -1,3 +1,11 @@
+function dataUrlToBytes(dataUrl) {
+  const base64 = String(dataUrl).split(',')[1] || '';
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
 async function generarPDF() {
   const postes = getPostes();
   const validationError = validateBeforeGenerate(postes);
@@ -21,8 +29,7 @@ async function generarPDF() {
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
     const dataUrl = document.getElementById('sigpad').toDataURL('image/png');
-    const sigBytes = await fetch(dataUrl).then(r => r.arrayBuffer());
-    const sigImg = await pdfDoc.embedPng(sigBytes);
+    const sigImg = await pdfDoc.embedPng(dataUrlToBytes(dataUrl));
 
     const general = {
       empresa: val('empresa'), unidad: val('unidad'), fecha: val('fecha'), hora: val('hora'),
@@ -59,7 +66,7 @@ async function generarPDF() {
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
     setStatus(`PDF listo: ${postes.length} parte(s), cada uno con anverso y reverso.`, 'ok');
     saveRememberedData();
   } catch (err) {
