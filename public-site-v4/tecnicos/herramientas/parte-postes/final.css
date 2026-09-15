@@ -1,0 +1,19 @@
+/* Ajustes finales de ergonomía. No cambian el contenido preventivo del documento. */
+#rp-nombre[readonly],#tel112[readonly]{background:#f3f6f8;color:#415563;cursor:default}
+.sigwrap:focus-within{border-color:#5b8fff;box-shadow:0 0 0 3px rgba(23,105,255,.1)}
+#sigpad{cursor:crosshair}
+.ladder-checks h3{margin:14px 0 8px;color:#0d2b42;font-size:15px}
+
+@media(min-width:821px){
+  .bottom{left:auto;right:22px;bottom:22px;width:390px;border:1px solid #d6e0e5;border-radius:15px;background:rgba(255,255,255,.97);box-shadow:0 16px 46px rgba(7,24,39,.14);padding:10px 12px}
+  .bottomin{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
+  .generate{min-width:0;width:100%;margin:0}
+  .status{padding:7px 2px 0;text-align:left;line-height:1.35}
+  .shell{padding-bottom:70px}
+}
+
+@media(max-width:620px){
+  #sigpad{height:180px}
+  .bottom{padding-top:8px}
+  .generate{min-height:50px;font-size:14px}
+}
