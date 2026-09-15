@@ -41,11 +41,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
 /* ---------- Carga robusta de PDF-Lib y de la versión final del generador ---------- */
 (() => {
+  let finalReady = false;
+  window.generarPDF = () => {
+    setStatus('Preparando el generador PDF…', '');
+  };
+
   const loadFinal = () => {
     if (document.querySelector('script[data-parte-postes-final]')) return;
     const s = document.createElement('script');
-    s.src = 'app-5.js?v=20260915b';
+    s.src = 'app-5.js?v=20260915c';
     s.dataset.partePostesFinal = '1';
+    s.onload = () => { finalReady = true; setStatus('', ''); };
     s.onerror = () => setStatus('No se ha podido cargar el generador. Recarga la página.', 'error');
     document.head.appendChild(s);
   };
