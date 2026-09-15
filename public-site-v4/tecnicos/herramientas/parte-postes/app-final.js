@@ -16,7 +16,7 @@
         <label><input type="radio" name="medio-${id}" value="ESCALERA_EXC"><span>Escalera exterior - uso excepcional</span></label>
         <label><input type="radio" name="medio-${id}" value="EXCEPCIONAL_D"><span class="medio-d-label">Medio excepcional específico</span></label>
       </div>
-      <small class="help medio-ayuda">Los medios excepcionales deben justificarse en el punto 6.</small>
+      <small class="help medio-ayuda">El punto 6 debe justificar el medio elegido. Si es excepcional, explica además por qué no es viable usar PEMP o escalera estabilizada.</small>
     </div>
     <div class="ladder-checks"><h3>Comprobación de la escalera</h3>
       ${LADDER_LABELS.map((label, i) => {
@@ -62,6 +62,14 @@
     syncMediumLabel(card);
   };
 
+  function justificationLooksReal(text, exceptional) {
+    const clean = String(text || '').trim().replace(/\s+/g, ' ');
+    if (!clean) return false;
+    const compactLength = clean.replace(/\s/g, '').length;
+    const words = clean.split(' ').filter(Boolean).length;
+    return exceptional ? compactLength >= 16 && words >= 3 : compactLength >= 10 && words >= 2;
+  }
+
   const originalValidate = validateBeforeGenerate;
   validateBeforeGenerate = function(postes) {
     const mapped = postes.map(p => ({
@@ -73,14 +81,17 @@
 
     const cards = [...document.querySelectorAll('.poste-card')];
     for (const [i, p] of postes.entries()) {
-      if ((p.medio === 'ESCALERA_EXC' || p.medio === 'EXCEPCIONAL_D') && p.justificacion.trim().length < 20) {
+      const exceptional = p.medio === 'ESCALERA_EXC' || p.medio === 'EXCEPCIONAL_D';
+      if (!justificationLooksReal(p.justificacion, exceptional)) {
         const el = cards[i]?.querySelector('.poste-just');
         if (el) {
           el.setAttribute('aria-invalid', 'true');
           el.scrollIntoView({ block: 'center' });
           el.focus({ preventScroll: true });
         }
-        return `Poste ${i + 1}: justifica con algo más de detalle el uso del medio excepcional.`;
+        return exceptional
+          ? `Poste ${i + 1}: explica de forma suficiente por qué necesitas usar ese medio excepcional.`
+          : `Poste ${i + 1}: justifica brevemente por qué el medio de acceso elegido es adecuado.`;
       }
     }
     return '';
