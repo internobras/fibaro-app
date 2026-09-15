@@ -38,3 +38,11 @@ window.addEventListener('DOMContentLoaded', () => {
   restoreRememberedData();
   document.getElementById('recordar-datos')?.addEventListener('change', saveRememberedData);
 });
+
+/* Carga la versión final del generador, que usa plantillas PNG optimizadas. */
+(() => {
+  const s = document.createElement('script');
+  s.src = 'app-5.js?v=20260915';
+  s.defer = true;
+  document.head.appendChild(s);
+})();
