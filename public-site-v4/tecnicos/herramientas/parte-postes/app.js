@@ -133,6 +133,7 @@ const TXT = {
 };
 
 let personaCount = 0;
+let nextFieldId = 0;
 let posteCount = 0;
 
 /* ---------- Personas (máx 2, tal y como tiene el formulario original) ---------- */
@@ -641,7 +642,7 @@ function validatePdfCapacity(font,g,postes){
   return '';
 }
 function labelFields(){
-  document.querySelectorAll('.field').forEach((field,i)=>{const label=field.querySelector('label');const input=field.querySelector('input:not([type=radio]),textarea,select');if(label&&input){if(!input.id)input.id='field-'+i;label.htmlFor=input.id;}});
+  document.querySelectorAll('.field').forEach((field,i)=>{const label=field.querySelector('label');const input=field.querySelector('input:not([type=radio]),textarea,select');if(label&&input){if(!input.id)input.id='field-'+(++nextFieldId);label.htmlFor=input.id;}});
   document.querySelectorAll('input[type=text]').forEach(e=>{if(!e.maxLength||e.maxLength<0)e.maxLength=80;});
   document.querySelectorAll('.poste-just').forEach(e=>e.maxLength=300);
 }
