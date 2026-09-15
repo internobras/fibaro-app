@@ -39,10 +39,26 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('recordar-datos')?.addEventListener('change', saveRememberedData);
 });
 
-/* Carga la versión final del generador, que usa plantillas PNG optimizadas. */
+/* ---------- Carga robusta de PDF-Lib y de la versión final del generador ---------- */
 (() => {
-  const s = document.createElement('script');
-  s.src = 'app-5.js?v=20260915';
-  s.defer = true;
-  document.head.appendChild(s);
+  const loadFinal = () => {
+    if (document.querySelector('script[data-parte-postes-final]')) return;
+    const s = document.createElement('script');
+    s.src = 'app-5.js?v=20260915b';
+    s.dataset.partePostesFinal = '1';
+    s.onerror = () => setStatus('No se ha podido cargar el generador. Recarga la página.', 'error');
+    document.head.appendChild(s);
+  };
+
+  if (window.PDFLib) {
+    loadFinal();
+    return;
+  }
+
+  const lib = document.createElement('script');
+  lib.src = 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js';
+  lib.crossOrigin = 'anonymous';
+  lib.onload = loadFinal;
+  lib.onerror = () => setStatus('No se ha podido cargar el motor PDF. Comprueba la conexión y recarga.', 'error');
+  document.head.appendChild(lib);
 })();
