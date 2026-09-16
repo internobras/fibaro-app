@@ -18,7 +18,7 @@
 <body>
   <div class="intro" id="intro" aria-hidden="true">
     <div class="introInner">
-      <img src="https://raw.githubusercontent.com/internobras/fibaro-app/main/assets/logo-blanco.png" alt="" class="introLogo">
+      <img src="/assets/logo-blanco.png" alt="" class="introLogo">
       <div class="introLine"><i></i></div>
       <div class="introMeta"><span>FÍBARO</span><span>Conectividad bien resuelta</span><span id="introCount">000</span></div>
     </div>
@@ -26,7 +26,7 @@
 
   <header class="topbar">
     <div class="wrap nav">
-      <a class="brand" href="/" aria-label="FÍBARO inicio"><img src="https://raw.githubusercontent.com/internobras/fibaro-app/main/assets/logo-blanco.png" alt="FÍBARO Telecomunicaciones"></a>
+      <a class="brand" href="/" aria-label="FÍBARO inicio"><img src="/assets/logo-blanco.png" alt="FÍBARO Telecomunicaciones"></a>
       <nav class="navLinks" aria-label="Principal">
         <a href="#ventajas">Ventajas</a><a href="#soluciones">Soluciones</a><a href="#cobertura">Cobertura</a><a href="#ofertas">Ofertas destacadas</a><a href="#alicia">Alicia</a><a href="#instagram">Instagram</a><a href="#contacto">Contacto</a>
       </nav>
@@ -47,7 +47,45 @@
     <section class="section faqSection"><div class="wrap faqGrid"><div class="reveal"><span class="eyebrow">Antes de hablar</span><h2>PREGUNTAS QUE MERECEN UNA RESPUESTA CLARA.</h2></div><div class="faq reveal"><details><summary>¿FÍBARO es una operadora?</summary><p>No. FÍBARO comercializa servicios de distintas compañías y coordina la atención y el seguimiento. Eso permite valorar varias opciones en lugar de empujar una única red.</p></details><details><summary>¿Trabajáis en toda España?</summary><p>Sí para atención comercial. En Zona FÍBARO existe además una ventaja operativa reforzada para muchas instalaciones y seguimientos.</p></details><details><summary>¿Podéis adelantar siempre una instalación?</summary><p>No se promete un plazo universal. Depende de la operadora, de que la orden esté liberada y de la viabilidad técnica. La diferencia es que, cuando existe margen operativo, podemos aprovecharlo en lugar de limitarnos a esperar la cita estándar.</p></details><details><summary>¿Y si en mi ubicación no llega fibra?</summary><p>No cerramos el caso solo por eso. Estudiamos alternativas de conectividad sujetas a viabilidad técnica, instalación y equipamiento necesarios.</p></details></div></div></section>
     <section class="section contactSection" id="contacto"><div class="wrap contactGrid"><div class="contactCopy reveal"><span class="eyebrow">Siguiente paso</span><h2>CUÉNTANOS EL CASO.<br>NOSOTROS ORDENAMOS EL RESTO.</h2><p>Déjanos el contexto justo. Alicia recibirá la solicitud dentro del sistema y podrá continuar sin hacerte repetir todo desde cero.</p></div><form id="leadForm" class="leadForm reveal"><input class="trap" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true"><label>Nombre<input name="nombre" required maxlength="120" autocomplete="name"></label><label>Teléfono / WhatsApp<input name="telefono" required inputmode="tel" autocomplete="tel"></label><label>Email <small>opcional</small><input name="email" type="email" autocomplete="email"></label><label>¿Qué necesitas?<select name="servicio"><option value="fiber">Fibra / móvil</option><option value="callback">Empresa / asesoramiento</option><option value="energy">Energía</option><option value="callback">Conectividad especial</option></select></label><label class="full">Cuéntanos qué está pasando<textarea name="mensaje" rows="4"></textarea></label><div class="privacyLine full">Al enviar, FÍBARO usará estos datos únicamente para atender tu solicitud y continuar contigo por el canal indicado. <a href="/privacidad" target="_blank" rel="noopener">Privacidad</a>.</div><div class="formActions full"><button class="primary" type="submit" id="leadSend">Enviar a FÍBARO</button><a class="secondary" href="https://wa.me/34633671657?text=Hola%20F%C3%8DBARO%2C%20quiero%20que%20revis%C3%A9is%20mi%20caso." target="_blank" rel="noopener">WhatsApp</a></div><div id="leadStatus" class="status full" role="status"></div></form></div></section>
   </main>
-  <footer><div class="wrap footerGrid"><img src="https://raw.githubusercontent.com/internobras/fibaro-app/main/assets/logo-blanco.png" alt="FÍBARO"><div><a href="/privacidad">Privacidad</a><a href="/aviso-legal">Aviso legal</a><a href="/cookies">Cookies</a><a href="/area-cliente">Área cliente</a></div><p>FÍBARO es un canal comercial y de asesoramiento. Las ofertas y plazos dependen de cobertura, elegibilidad, disponibilidad y condiciones del proveedor correspondiente.</p></div></footer>
+  <footer><div class="wrap footerGrid"><img src="/assets/logo-blanco.png" alt="FÍBARO"><div><a href="/privacidad">Privacidad</a><a href="/aviso-legal">Aviso legal</a><a href="/cookies">Cookies</a><a href="/area-cliente">Área cliente</a></div><p>FÍBARO es un canal comercial y de asesoramiento. Las ofertas y plazos dependen de cobertura, elegibilidad, disponibilidad y condiciones del proveedor correspondiente.</p></div></footer>
   <div class="modal" id="offerModal" aria-hidden="true"><div class="modalBackdrop" data-close-offer></div><div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="offerModalTitle"><button class="modalClose" data-close-offer aria-label="Cerrar">×</button><small>Solicitud prioritaria</small><h2 id="offerModalTitle">Oferta destacada</h2><p id="offerModalCopy"></p><form id="offerForm"><input type="hidden" name="featured_offer_id" id="featuredOfferId"><input class="trap" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true"><label>Nombre<input name="nombre" required autocomplete="name"></label><label>Teléfono / WhatsApp<input name="telefono" required inputmode="tel" autocomplete="tel"></label><label>Email <small>opcional</small><input name="email" type="email" autocomplete="email"></label><label>Mensaje<textarea name="mensaje" rows="3"></textarea></label><div class="privacyLine">Al enviar, FÍBARO usará estos datos para atender esta solicitud. <a href="/privacidad" target="_blank" rel="noopener">Privacidad</a>.</div><button class="primary" type="submit" id="offerSend">Solicitar con prioridad</button><div id="offerStatus" class="status" role="status"></div></form></div></div>
+  <script>
+  (()=>{
+    const mobile=document.getElementById('mobileNav');
+    const intro=document.getElementById('intro');
+    const revealTarget=target=>{
+      if(target.classList.contains('reveal'))target.classList.add('in');
+      target.querySelectorAll('.reveal').forEach(el=>el.classList.add('in'));
+    };
+    const go=(hash,behavior='smooth')=>{
+      if(!hash||hash==='#')return;
+      const id=decodeURIComponent(hash.slice(1));
+      const target=document.getElementById(id);
+      if(!target)return;
+      revealTarget(target);
+      const header=document.querySelector('.topbar')?.getBoundingClientRect().height||0;
+      const top=target.getBoundingClientRect().top+window.scrollY-header-12;
+      window.scrollTo({top:Math.max(0,top),behavior});
+    };
+    document.addEventListener('click',event=>{
+      const link=event.target.closest('a[href^="#"]');
+      if(!link)return;
+      const hash=link.getAttribute('href');
+      if(!hash||hash==='#'||!document.getElementById(hash.slice(1)))return;
+      event.preventDefault();
+      mobile?.classList.remove('open');
+      history.pushState(null,'',hash);
+      go(hash,'smooth');
+    });
+    addEventListener('hashchange',()=>go(location.hash,'smooth'));
+    if(location.hash){
+      const target=document.getElementById(decodeURIComponent(location.hash.slice(1)));
+      if(target)revealTarget(target);
+      const initial=()=>go(location.hash,'auto');
+      if(document.readyState==='complete')initial();else addEventListener('load',initial,{once:true});
+      if(intro&&!intro.classList.contains('done'))setTimeout(initial,1950);
+    }
+  })();
+  </script>
 </body>
 </html>
