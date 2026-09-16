@@ -123,7 +123,10 @@
       const box = document.createElement('div');
       box.className = 'quick-all';
       box.innerHTML = '<div><strong>Modo rápido</strong><span>Si has comprobado que todo está correcto, aplica de una vez los valores conformes.</span></div><button type="button" class="btn btn-primary">✓ Aplicar todo conforme</button>';
-      box.querySelector('button').addEventListener('click', applyGeneralConforme);
+      box.querySelector('button').addEventListener('click', () => {
+        const ok = window.confirm('Confirma que has comprobado personalmente las condiciones, EPIs, formación, medidas preventivas y cada poste. Esta acción marcará todos esos controles como conformes.');
+        if (ok) applyGeneralConforme();
+      });
       postesCard.querySelector('h2')?.insertAdjacentElement('afterend', box);
     }
 
