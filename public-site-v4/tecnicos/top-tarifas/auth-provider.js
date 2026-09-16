@@ -1,10 +1,7 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.0/+esm';
-
 const SUPABASE_URL='https://kgcuqxzpxykqszdeonte.supabase.co';
 const SUPABASE_KEY='sb_publishable_I5X2IBZZkmFyDDez_Kf4aA_hNyLkzay';
 const AUTH_FN=`${SUPABASE_URL}/functions/v1/tech-auth`;
 const PENDING_KEY='fibaro_tech_registration_v2';
-createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
 function pending(){try{return JSON.parse(localStorage.getItem(PENDING_KEY)||'{}')}catch{return{}}}
 function savePending(v){localStorage.setItem(PENDING_KEY,JSON.stringify({...v,at:Date.now()}))}
