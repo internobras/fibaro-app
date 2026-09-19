@@ -4,6 +4,7 @@ import QRCode from 'https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm';
 const SUPABASE_URL='https://kgcuqxzpxykqszdeonte.supabase.co';
 const SUPABASE_KEY='sb_publishable_I5X2IBZZkmFyDDez_Kf4aA_hNyLkzay';
 const PRIVATE_FN=`${SUPABASE_URL}/functions/v1/tech-private`;
+const AUTH_FN=`${SUPABASE_URL}/functions/v1/tech-auth`;
 const PENDING_KEY='fibaro_tech_registration_v2';
 const supabase=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,experimental:{passkey:true}}});
 
@@ -77,12 +78,15 @@ async function sendAccess(){
   if(!validEmail(email)){st.textContent='Indica un correo electrónico válido.';st.className='authStatus error';return}
   savePending({name,phone,email});
   st.textContent='Enviando acceso seguro…';st.className='authStatus';btn.disabled=true;
-  const{error}=await supabase.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:`${location.origin}/tecnicos/top-tarifas/`,data:{full_name:name,tech_name:name,tech_phone:phone,tech_source:'top_tarifas'}}});
-  btn.disabled=false;
-  if(error){st.textContent=friendlyAuthError(error);st.className='authStatus error';return}
-  renderMailSent(email);
+  try{
+    const r=await fetch(AUTH_FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},body:JSON.stringify({name,phone,email,website:''})});
+    const j=await r.json().catch(()=>({}));
+    btn.disabled=false;
+    if(!r.ok)throw new Error(j.error||'No se ha podido enviar el acceso.');
+    renderMailSent(email);
+  }catch(error){btn.disabled=false;st.textContent=friendlyAuthError(error);st.className='authStatus error'}
 }
-async function sendAccessFromPending(){if(!pending.email){renderAuth();return}const btn=document.getElementById('resendAccess'),st=document.getElementById('authStatus');btn.disabled=true;st.textContent='Reenviando…';const{error}=await supabase.auth.signInWithOtp({email:pending.email,options:{shouldCreateUser:true,emailRedirectTo:`${location.origin}/tecnicos/top-tarifas/`,data:{full_name:pending.name||'',tech_name:pending.name||'',tech_phone:pending.phone||'',tech_source:'top_tarifas'}}});if(error){st.textContent=friendlyAuthError(error);st.className='authStatus error';btn.disabled=false;return}st.textContent='Acceso reenviado.';st.className='authStatus ok';setTimeout(()=>btn.disabled=false,60000)}
+async function sendAccessFromPending(){if(!pending.email){renderAuth();return}const btn=document.getElementById('resendAccess'),st=document.getElementById('authStatus');btn.disabled=true;st.textContent='Reenviando…';try{const r=await fetch(AUTH_FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},body:JSON.stringify({name:pending.name||'',phone:pending.phone||'',email:pending.email,website:''})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'No se ha podido reenviar el acceso.');st.textContent='Acceso reenviado.';st.className='authStatus ok';setTimeout(()=>btn.disabled=false,60000)}catch(error){st.textContent=friendlyAuthError(error);st.className='authStatus error';btn.disabled=false}}
 
 async function load(){
   app.innerHTML='<div class="loading">Cargando tu espacio…</div>';
