@@ -14,6 +14,7 @@ const modal=document.getElementById('modal');
 const modalBody=document.getElementById('modalBody');
 let data=null;
 let pending=readPending();
+let authMode='login';
 const statusLabels={received:'Recibido',reviewing:'En revisión',contacted:'Contactado',processing:'Tramitando',pending_installation:'Pendiente de instalación',installed:'Instalado',validated:'Validado',not_completed:'No completado',duplicate:'Duplicado'};
 
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -48,16 +49,18 @@ function authErrorFromUrl(){
 function renderAuth(message=''){
   const urlErr=authErrorFromUrl();
   const msg=message||urlErr;
-  app.innerHTML=`<section class="auth"><div class="authCard"><div class="authLogo">T</div><div class="eyebrow" style="color:#1769ff">TOP TARIFAS</div><h1>Crea tu enlace personal.</h1><p>Una sola identificación para que tus enlaces, QR y solicitudes queden asociados a ti. Sin contraseñas.</p>
-  <div class="field"><label>Nombre o alias</label><input id="a-name" autocomplete="name" placeholder="Ej. Juan Carlos o JaviFiber" value="${esc(pending.name||'')}"></div>
-  <div class="field"><label>Móvil</label><div class="phoneWrap"><div class="prefix">+34</div><input id="a-phone" inputmode="tel" autocomplete="tel-national" placeholder="600 000 000" value="${esc(pending.phone||'')}"></div></div>
-  <div class="field"><label>Correo electrónico</label><input id="a-email" type="email" inputmode="email" autocomplete="email" placeholder="tu@correo.com" value="${esc(pending.email||'')}"><small>El acceso seguro se enviará a este correo. Tu móvil queda como dato de contacto.</small></div>
+  const login=authMode==='login';
+  app.innerHTML=`<section class="auth"><div class="authCard"><div class="authLogo">T</div><div class="eyebrow" style="color:#1769ff">TOP TARIFAS</div><h1>${login?'Inicia sesión.':'Crea tu enlace personal.'}</h1><p>${login?'Introduce el correo de tu cuenta. Te enviaremos un enlace para volver a tu perfil, tus ofertas y tus referencias. Sin contraseña.':'Una sola identificación para que tus enlaces, QR y solicitudes queden asociados a ti. Sin contraseñas.'}</p>
+  ${login?'':`<div class="field"><label for="a-name">Nombre o alias</label><input id="a-name" autocomplete="name" placeholder="Ej. Juan Carlos o JaviFiber" value="${esc(pending.name||'')}"></div>
+  <div class="field"><label for="a-phone">Móvil</label><div class="phoneWrap"><div class="prefix">+34</div><input id="a-phone" inputmode="tel" autocomplete="tel-national" placeholder="600 000 000" value="${esc(pending.phone||'')}"></div></div>`}
+  <div class="field"><label for="a-email">Correo electrónico</label><input id="a-email" type="email" inputmode="email" autocomplete="email" placeholder="tu@correo.com" value="${esc(pending.email||'')}"><small>${login?'Usa el mismo correo con el que creaste tu cuenta.':'El acceso seguro se enviará a este correo. Tu móvil queda como dato de contacto.'}</small></div>
   <button class="btn primary" id="sendAccess" style="width:100%">Recibir acceso por email</button>
-  <div id="authStatus" class="authStatus ${msg?'error':''}">${esc(msg)}</div><div class="divider"></div><div class="privacyNote">Tu código público de referido es independiente de tu acceso. Nadie puede entrar en tu cuenta con tu QR o enlace.</div></div></section>`;
+  <div id="authStatus" role="status" class="authStatus ${msg?'error':''}">${esc(msg)}</div><div class="divider"></div><p>${login?'¿Todavía no tienes cuenta?':'¿Ya tienes una cuenta?'}</p><button class="btn" id="switchAuth">${login?'Crear cuenta':'Iniciar sesión'}</button><div class="privacyNote">Tu código público de referido es independiente de tu acceso. Nadie puede entrar en tu cuenta con tu QR o enlace.</div></div></section>`;
   document.getElementById('sendAccess').onclick=sendAccess;
+  document.getElementById('switchAuth').onclick=()=>{pending={...pending,email:document.getElementById('a-email').value,name:document.getElementById('a-name')?.value||pending.name,phone:document.getElementById('a-phone')?.value||pending.phone};authMode=login?'register':'login';renderAuth()};
 }
 function renderMailSent(email){
-  app.innerHTML=`<section class="auth"><div class="authCard"><div class="authLogo">✓</div><div class="eyebrow" style="color:#1769ff">ACCESO ENVIADO</div><h1>Revisa tu correo.</h1><p>Hemos enviado el acceso a <b>${esc(email)}</b>. Toca el enlace del mensaje y volverás directamente a Top Tarifas.</p><div class="actions"><button class="btn" id="changeEmail">Cambiar datos</button><button class="btn primary" id="resendAccess">Reenviar acceso</button></div><div id="authStatus" class="authStatus ok">El enlace caduca por seguridad. Si no lo ves, revisa spam o promociones.</div></div></section>`;
+  app.innerHTML=`<section class="auth"><div class="authCard"><div class="authLogo">✓</div><div class="eyebrow" style="color:#1769ff">ACCESO ENVIADO</div><h1>Revisa tu correo.</h1><p>${pending.mode==='login'?'Si el correo corresponde a una cuenta activa, recibirás un enlace en':'Hemos enviado el acceso a'} <b>${esc(email)}</b>. Toca el enlace del mensaje y volverás directamente a Top Tarifas.</p><div class="actions"><button class="btn" id="changeEmail">Cambiar datos</button><button class="btn primary" id="resendAccess">Reenviar acceso</button></div><div id="authStatus" class="authStatus ok">El enlace caduca por seguridad. Si no lo ves, revisa spam o promociones.</div></div></section>`;
   document.getElementById('changeEmail').onclick=()=>renderAuth();
   document.getElementById('resendAccess').onclick=sendAccessFromPending;
 }
@@ -69,24 +72,26 @@ function friendlyAuthError(error){
   return m||'No se ha podido enviar el acceso.';
 }
 async function sendAccess(){
-  const name=document.getElementById('a-name').value.trim();
-  const phone=document.getElementById('a-phone').value.replace(/\D/g,'');
+  const name=document.getElementById('a-name')?.value.trim()||'';
+  let phone=(document.getElementById('a-phone')?.value||'').replace(/\D/g,'');
+  if(phone.startsWith('0034'))phone=phone.slice(4);
+  if(phone.startsWith('34')&&phone.length===11)phone=phone.slice(2);
   const email=document.getElementById('a-email').value.trim().toLowerCase();
   const st=document.getElementById('authStatus'),btn=document.getElementById('sendAccess');
-  if(name.length<2){st.textContent='Indica tu nombre o alias.';st.className='authStatus error';return}
-  if(phone.length!==9){st.textContent='Indica un móvil español de 9 cifras.';st.className='authStatus error';return}
+  if(authMode!=='login'&&name.length<2){st.textContent='Indica tu nombre o alias.';st.className='authStatus error';return}
+  if(authMode!=='login'&&phone.length!==9){st.textContent='Indica un móvil español de 9 cifras.';st.className='authStatus error';return}
   if(!validEmail(email)){st.textContent='Indica un correo electrónico válido.';st.className='authStatus error';return}
-  savePending({name,phone,email});
+  savePending({name,phone,email,mode:authMode});
   st.textContent='Enviando acceso seguro…';st.className='authStatus';btn.disabled=true;
   try{
-    const r=await fetch(AUTH_FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},body:JSON.stringify({name,phone,email,website:''})});
+    const r=await fetch(AUTH_FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},body:JSON.stringify({name,phone,email,mode:authMode,website:''})});
     const j=await r.json().catch(()=>({}));
     btn.disabled=false;
     if(!r.ok)throw new Error(j.error||'No se ha podido enviar el acceso.');
     renderMailSent(email);
   }catch(error){btn.disabled=false;st.textContent=friendlyAuthError(error);st.className='authStatus error'}
 }
-async function sendAccessFromPending(){if(!pending.email){renderAuth();return}const btn=document.getElementById('resendAccess'),st=document.getElementById('authStatus');btn.disabled=true;st.textContent='Reenviando…';try{const r=await fetch(AUTH_FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},body:JSON.stringify({name:pending.name||'',phone:pending.phone||'',email:pending.email,website:''})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'No se ha podido reenviar el acceso.');st.textContent='Acceso reenviado.';st.className='authStatus ok';setTimeout(()=>btn.disabled=false,60000)}catch(error){st.textContent=friendlyAuthError(error);st.className='authStatus error';btn.disabled=false}}
+async function sendAccessFromPending(){if(!pending.email){renderAuth();return}const btn=document.getElementById('resendAccess'),st=document.getElementById('authStatus');btn.disabled=true;st.textContent='Reenviando…';try{const r=await fetch(AUTH_FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},body:JSON.stringify({name:pending.name||'',phone:pending.phone||'',email:pending.email,mode:pending.mode||'register',website:''})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'No se ha podido reenviar el acceso.');st.textContent='Acceso reenviado.';st.className='authStatus ok';setTimeout(()=>btn.disabled=false,60000)}catch(error){st.textContent=friendlyAuthError(error);st.className='authStatus error';btn.disabled=false}}
 
 async function load(){
   app.innerHTML='<div class="loading">Cargando tu espacio…</div>';
