@@ -1,7 +1,8 @@
 (()=>{'use strict';
 const CONFIG={
   gaMeasurementId:'G-M4NJFD8R1L',
-  metaPixelId:'',
+  metaPixelId:'1741507586902044',
+  metaEndpoint:'https://kgcuqxzpxykqszdeonte.supabase.co/functions/v1/meta-conversions',
   endpoint:'https://kgcuqxzpxykqszdeonte.supabase.co/functions/v1/submit-intake',
   consentKey:'fibaro_consent_v1',
   consentVersion:1,
@@ -138,10 +139,17 @@ function sendMeta(name,payload){
   const params={content_name:payload.campaign||payload.type||location.pathname,content_category:payload.cta_position||payload.service||name};
   const options=payload.event_id?{eventID:payload.event_id}:undefined;window.fbq('track',metaName,params,options);
 }
+function readCookie(name){
+  const prefix=`${name}=`;const value=document.cookie.split(';').map(item=>item.trim()).find(item=>item.startsWith(prefix));return value?decodeURIComponent(value.slice(prefix.length)).slice(0,300):'';
+}
+function sendMetaServer(name,payload){
+  if(name!=='funnel_completed'||!consent?.marketing||!payload.event_id)return;
+  try{fetch(CONFIG.metaEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event_name:'Lead',event_id:payload.event_id,event_source_url:location.origin+location.pathname,marketing_consent:true,fbp:readCookie('_fbp'),fbc:readCookie('_fbc')}),keepalive:true}).catch(()=>{})}catch{}
+}
 function track(name,payload={}){
   if(!ALLOWED_EVENTS.has(name))return;
   const safe=safePayload({...payload,page:payload.page||location.pathname});
-  sendInternal(name,safe);sendGa(name,safe);sendMeta(name,safe);
+  sendInternal(name,safe);sendGa(name,safe);sendMeta(name,safe);sendMetaServer(name,safe);
 }
 function trackInitial(){
   const payload=safePayload({page:location.pathname});
