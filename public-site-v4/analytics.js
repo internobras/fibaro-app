@@ -169,7 +169,17 @@ function mountConsentUi(){
   document.querySelector('[data-cookie-save]').addEventListener('click',()=>writeConsent(document.querySelector('[name="cookie-analytics"]').checked,document.querySelector('[name="cookie-marketing"]').checked));
   document.querySelector('[data-cookie-close]').addEventListener('click',closePreferences);
   document.querySelector('[data-cookie-panel]').addEventListener('click',event=>{if(event.target.matches('[data-cookie-panel]'))closePreferences()});
-  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!document.querySelector('[data-cookie-panel]').hidden)closePreferences()});
+  document.addEventListener('keydown',event=>{
+    const panel=document.querySelector('[data-cookie-panel]');
+    if(!panel||panel.hidden)return;
+    if(event.key==='Escape'){closePreferences();return}
+    if(event.key!=='Tab')return;
+    const focusable=[...panel.querySelectorAll('button:not([disabled]),a[href],input:not([disabled])')].filter(element=>!element.hidden);
+    if(!focusable.length)return;
+    const first=focusable[0],last=focusable[focusable.length-1];
+    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
+    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
+  });
 }
 function bindInteractions(){
   document.addEventListener('click',event=>{
