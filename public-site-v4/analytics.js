@@ -25,12 +25,13 @@ const EVENT_MAP={
   funnel_step:{ga:'form_progress'},
   experiment_exposure:{ga:'experiment_impression'},
   campaign_viewed:{ga:'view_promotion'},
+  web_vital:{ga:'web_vital'},
 };
 const INTERNAL_EVENT_MAP={page_view:'page_view',whatsapp_clicked:'whatsapp_clicked',phone_clicked:'call_clicked',funnel_started:'funnel_started',funnel_step:'funnel_step',funnel_completed:'funnel_completed',need_selected:'need_selected',zone_checked:'zone_checked',offer_clicked:'offer_clicked',campaign_viewed:'campaign_viewed',experiment_exposure:'experiment_exposure'};
 const ALLOWED_EVENTS=new Set(Object.keys(EVENT_MAP));
-const SAFE_KEYS=new Set(['page','page_path','cta_position','type','service','placement','offer_id','campaign','content','technical_zone','event_id','interest','step','experiment','variant']);
+const SAFE_KEYS=new Set(['page','page_path','cta_position','type','service','placement','offer_id','campaign','content','technical_zone','event_id','interest','step','experiment','variant','metric','metric_value','rating','navigation_type']);
 const q=new URLSearchParams(location.search);
-let consent=readConsent(),gaLoaded=false,metaLoaded=false,pageTracked=false,metaPageTracked=false,previousFocus=null;
+let consent=readConsent(),gaLoaded=false,metaLoaded=false,pageTracked=false,metaPageTracked=false,vitalsStarted=false,previousFocus=null;
 
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};
@@ -61,7 +62,7 @@ function applyConsent(){
     ad_personalization:marketing?'granted':'denied',
   });
   if(analytics||marketing)captureAttribution();
-  if(analytics)loadGa();else clearProviderCookies(['_ga','_gid']);
+  if(analytics){loadGa();measureWebVitals()}else clearProviderCookies(['_ga','_gid']);
   if(marketing)loadMeta();else clearProviderCookies(['_fbp','_fbc']);
   trackInitial();
   document.dispatchEvent(new CustomEvent('fibaro:consent',{detail:{analytics,marketing}}));
@@ -138,6 +139,18 @@ function sendGa(name,payload){
   if(!consent?.analytics||!gaLoaded||!EVENT_MAP[name]?.ga)return;
   const selected=attribution().selected,params={...payload,page_title:document.title,page_path:location.pathname,page_location:location.href,campaign_source:selected.source||'directo',campaign_medium:selected.medium||'',campaign_name:selected.campaign||'',campaign_content:selected.content||'',debug_mode:location.hostname==='localhost'||location.hostname.endsWith('.vercel.app')};
   window.gtag('event',EVENT_MAP[name].ga,params);
+}
+function measureWebVitals(){
+  if(vitalsStarted||!consent?.analytics||!('PerformanceObserver'in window))return;vitalsStarted=true;
+  const reported=new Set(),values={LCP:0,CLS:0,INP:0};
+  const rating=(metric,value)=>metric==='LCP'?(value<=2500?'good':value<=4000?'needs-improvement':'poor'):metric==='CLS'?(value<=.1?'good':value<=.25?'needs-improvement':'poor'):metric==='TTFB'?(value<=800?'good':value<=1800?'needs-improvement':'poor'):(value<=200?'good':value<=500?'needs-improvement':'poor');
+  const report=(metric,value)=>{if(reported.has(metric)||!Number.isFinite(value)||value<0)return;reported.add(metric);sendGa('web_vital',safePayload({metric,metric_value:metric==='CLS'?Number(value.toFixed(4)):Math.round(value),rating:rating(metric,value),navigation_type:performance.getEntriesByType('navigation')[0]?.type||'navigate'}))};
+  try{new PerformanceObserver(list=>{const entries=list.getEntries();if(entries.length)values.LCP=entries.at(-1).startTime}).observe({type:'largest-contentful-paint',buffered:true})}catch{}
+  try{new PerformanceObserver(list=>{for(const entry of list.getEntries())if(!entry.hadRecentInput)values.CLS+=entry.value}).observe({type:'layout-shift',buffered:true})}catch{}
+  try{new PerformanceObserver(list=>{for(const entry of list.getEntries())values.INP=Math.max(values.INP,entry.duration||0)}).observe({type:'event',buffered:true,durationThreshold:40})}catch{}
+  const navigation=performance.getEntriesByType('navigation')[0];if(navigation)report('TTFB',navigation.responseStart-navigation.requestStart);
+  const flush=()=>{if(values.LCP)report('LCP',values.LCP);report('CLS',values.CLS);if(values.INP)report('INP',values.INP)};
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flush()},{once:true});window.addEventListener('pagehide',flush,{once:true});
 }
 function sendMeta(name,payload){
   const metaName=EVENT_MAP[name]?.meta;if(!consent?.marketing||!metaLoaded||!metaName||typeof window.fbq!=='function')return;
