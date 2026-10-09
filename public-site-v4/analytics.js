@@ -20,10 +20,15 @@ const EVENT_MAP={
   offer_clicked:{ga:'select_promotion'},
   campaign_view:{ga:'view_promotion'},
   gift_cta_clicked:{ga:'select_promotion'},
+  need_selected:{ga:'select_content'},
+  zone_checked:{ga:'zone_check'},
+  funnel_step:{ga:'form_progress'},
+  experiment_exposure:{ga:'experiment_impression'},
+  campaign_viewed:{ga:'view_promotion'},
 };
-const INTERNAL_EVENT_MAP={page_view:'page_view',whatsapp_clicked:'whatsapp_clicked',phone_clicked:'call_clicked',funnel_started:'funnel_started',funnel_completed:'funnel_completed'};
+const INTERNAL_EVENT_MAP={page_view:'page_view',whatsapp_clicked:'whatsapp_clicked',phone_clicked:'call_clicked',funnel_started:'funnel_started',funnel_step:'funnel_step',funnel_completed:'funnel_completed',need_selected:'need_selected',zone_checked:'zone_checked',offer_clicked:'offer_clicked',campaign_viewed:'campaign_viewed',experiment_exposure:'experiment_exposure'};
 const ALLOWED_EVENTS=new Set(Object.keys(EVENT_MAP));
-const SAFE_KEYS=new Set(['page','page_path','cta_position','type','service','placement','offer_id','campaign','content','technical_zone','event_id']);
+const SAFE_KEYS=new Set(['page','page_path','cta_position','type','service','placement','offer_id','campaign','content','technical_zone','event_id','interest','step','experiment','variant']);
 const q=new URLSearchParams(location.search);
 let consent=readConsent(),gaLoaded=false,metaLoaded=false,pageTracked=false,metaPageTracked=false,previousFocus=null;
 
