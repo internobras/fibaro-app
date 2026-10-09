@@ -13,7 +13,8 @@ const configs={
 };
 const cfg=configs[route];
 function meta(property,content){let el=document.querySelector(`meta[property="${property}"],meta[name="${property}"]`);if(!el){el=document.createElement('meta');el.setAttribute(property.startsWith('og:')?'property':'name',property);document.head.append(el)}el.content=content}
-meta('og:type','website');meta('og:url',location.href.split('?')[0]);meta('og:image','https://www.fibaroteleco.com/alicia.webp');meta('twitter:card','summary_large_image');
+const description=document.querySelector('meta[name="description"]')?.content||'';
+meta('og:type','website');meta('og:url',location.href.split('?')[0]);meta('og:title',document.title);if(description)meta('og:description',description);meta('og:image','https://www.fibaroteleco.com/alicia.webp');meta('twitter:card','summary_large_image');
 if(!document.querySelector('link[rel="icon"]')){const icon=document.createElement('link');icon.rel='icon';icon.type='image/svg+xml';icon.href='/tecnicos/icon.svg';document.head.append(icon)}
 document.querySelectorAll('nav').forEach(n=>{if(!n.hasAttribute('aria-label'))n.setAttribute('aria-label','Principal')});
 if(!cfg)return;
