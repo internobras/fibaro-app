@@ -1,17 +1,28 @@
 (()=>{'use strict';
 const route=location.pathname.replace(/^\/+|\/+$/g,'');
-const messages={telecom:'Hola, quiero información de fibra y móvil',energia:'Hola, quiero que me reviséis la factura de la luz',empresas:'Hola, quiero información para mi empresa','fibra-sanlucar':'Hola, soy de Sanlúcar de Barrameda y quiero información de fibra','fibra-jerez':'Hola, soy de Jerez de la Frontera y quiero información de fibra','fibra-el-puerto':'Hola, soy de El Puerto de Santa María y quiero información de fibra','fibra-rota':'Hola, soy de Rota y quiero información de fibra','fibra-chipiona':'Hola, soy de Chipiona y quiero información de fibra'};
-if(messages[route])document.querySelectorAll('a[href*="wa.me"]').forEach(a=>a.href=`https://wa.me/34633671657?text=${encodeURIComponent(messages[route])}`);
-const heroCopy=document.querySelector('.hero p');
-if(heroCopy){
-  if(route==='telecom')heroCopy.textContent='Fibra y móvil con la compañía que elijas. El papeleo y la instalación, cosa nuestra. Trabajamos con Pepephone, MásMóvil, Jazztel, Simyo, Finetwork y otras opciones disponibles según cobertura.';
-  if(route==='energia')heroCopy.textContent='No somos la comercializadora: revisamos, comparamos y te ayudamos a tramitarlo. Mándanos una foto de tu factura por WhatsApp y comprobamos si existe una mejora real.';
-  if(route==='empresas')heroCopy.textContent='Conectividad para tu negocio con Orange Empresas y otras soluciones disponibles, y alguien cerca que responde. Ordenamos el caso, mantenemos el contexto y coordinamos el siguiente paso.';
-  const towns={'fibra-sanlucar':'Sanlúcar de Barrameda','fibra-jerez':'Jerez de la Frontera','fibra-el-puerto':'El Puerto de Santa María','fibra-rota':'Rota','fibra-chipiona':'Chipiona'};
-  if(towns[route])heroCopy.textContent=`Fibra, móvil y luz en ${towns[route]}. Te lo instala un vecino. Trabajamos con técnicos propios: agilizamos la cita y, si algo falla, volvemos nosotros. Tú eliges la compañía y nosotros lo tramitamos todo.`;
-}
-const darkCopy=document.querySelector('.section.dark p');
-if(darkCopy&&(route==='fibra-sanlucar'||route==='fibra-jerez'||route==='fibra-rota'||route==='empresas'))darkCopy.innerHTML='En nuestra zona trabajamos con técnicos propios. Eso nos permite agilizar las citas y, cuando la disponibilidad y el alta lo permiten, incluso instalar el mismo día. Lo normal es tenerlo instalado en menos de 3 días laborables.<br><small>*Fibra nueva en zona de cobertura propia, sujeto a disponibilidad técnica.</small>';
-if(!document.querySelector('link[href^="/christmas2026.css"]')){const link=document.createElement('link');link.rel='stylesheet';link.href='/christmas2026.css?v=20261005';document.head.append(link)}
-if(!document.querySelector('script[src^="/christmas2026.js"]')){const script=document.createElement('script');script.src='/christmas2026.js?v=20261005';script.defer=true;document.head.append(script)}
+const configs={
+ telecom:{interest:'fibra',label:'Fibra y móvil',cta:'Ayúdame a elegir',wa:'Hola Alicia, quiero revisar mi fibra y móvil.'},
+ energia:{interest:'energia',label:'Energía',cta:'Revisar mi factura',wa:'Hola Alicia, te envío una foto de mi factura para revisar si puedo mejorar.'},
+ empresas:{interest:'empresa',label:'Empresas',cta:'Revisar mi empresa',wa:'Hola Alicia, quiero revisar la conectividad de mi empresa.'},
+ 'zona-fibaro':{interest:'cobertura',label:'Zona FÍBARO',cta:'Comprobar mi caso',wa:'Hola Alicia, quiero comprobar mi caso en Zona FÍBARO.'},
+ 'fibra-sanlucar':{interest:'fibra',label:'Sanlúcar',cta:'Comprobar cobertura',wa:'Hola Alicia, soy de Sanlúcar y quiero revisar mi fibra.'},
+ 'fibra-rota':{interest:'fibra',label:'Rota',cta:'Comprobar cobertura',wa:'Hola Alicia, soy de Rota y quiero revisar mi fibra.'},
+ 'fibra-chipiona':{interest:'fibra',label:'Chipiona',cta:'Comprobar cobertura',wa:'Hola Alicia, soy de Chipiona y quiero revisar mi fibra.'},
+ 'fibra-el-puerto':{interest:'fibra',label:'El Puerto',cta:'Comprobar cobertura',wa:'Hola Alicia, soy de El Puerto y quiero revisar mi fibra.'},
+ 'fibra-jerez':{interest:'fibra',label:'Jerez',cta:'Comprobar cobertura',wa:'Hola Alicia, soy de Jerez y quiero revisar mi fibra.'}
+};
+const cfg=configs[route];
+function meta(property,content){let el=document.querySelector(`meta[property="${property}"],meta[name="${property}"]`);if(!el){el=document.createElement('meta');el.setAttribute(property.startsWith('og:')?'property':'name',property);document.head.append(el)}el.content=content}
+meta('og:type','website');meta('og:url',location.href.split('?')[0]);meta('og:image','https://www.fibaroteleco.com/alicia.webp');meta('twitter:card','summary_large_image');
+if(!document.querySelector('link[rel="icon"]')){const icon=document.createElement('link');icon.rel='icon';icon.type='image/svg+xml';icon.href='/tecnicos/icon.svg';document.head.append(icon)}
+document.querySelectorAll('nav').forEach(n=>{if(!n.hasAttribute('aria-label'))n.setAttribute('aria-label','Principal')});
+if(!cfg)return;
+document.querySelectorAll('a[href="/#contacto"]').forEach(a=>{a.href=`/?interest=${encodeURIComponent(cfg.interest)}#empezar`;if(a.matches('.cta,.pill'))a.textContent=cfg.cta});
+document.querySelectorAll('a[href*="wa.me"],a[href*="api.whatsapp.com/send"]').forEach(a=>a.href=`https://wa.me/34633671657?text=${encodeURIComponent(cfg.wa)}`);
+const substitutions=new Map([
+ ['Historial del caso','Una persona de referencia'],['Prioridad operativa.','Primero, lo que más afecta a tu negocio.'],['Seguimiento único.','Un solo hilo de principio a fin.'],['más control operativo','más cercanía técnica'],['margen operativo','capacidad de coordinación'],['Solicitud, oferta, alta, instalación y seguimiento conservan el mismo contexto.','No tienes que repetir el caso cada vez que avanza el proceso.'],['Alicia continúa el caso con el contexto guardado.','Alicia revisa tu caso y te explica el siguiente paso.']
+]);
+const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let node;while(node=walker.nextNode()){for(const [from,to] of substitutions)if(node.nodeValue.includes(from))node.nodeValue=node.nodeValue.replaceAll(from,to)}
+if(route==='energia'){const hero=document.querySelector('.hero .actions');if(hero){const photo=document.createElement('a');photo.className='ghost';photo.href=`https://wa.me/34633671657?text=${encodeURIComponent(cfg.wa)}`;photo.target='_blank';photo.rel='noopener';photo.dataset.track='energia_factura';photo.textContent='Enviar foto de mi factura';hero.append(photo)}}
+const sticky=document.createElement('div');sticky.className='seo-mobile-sticky';sticky.innerHTML=`<a href="/?interest=${encodeURIComponent(cfg.interest)}#empezar">${cfg.cta}</a><a href="https://wa.me/34633671657?text=${encodeURIComponent(cfg.wa)}" target="_blank" rel="noopener">WhatsApp</a>`;document.body.append(sticky);
 })();

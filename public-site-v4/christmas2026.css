@@ -38,3 +38,4 @@
 @media(prefers-reduced-motion:reduce){.gift-stamp{transform:none}}
 .gift-form input[type="checkbox"]{width:auto;margin:0 7px 0 0;vertical-align:middle}.trap{position:absolute!important;left:-9999px!important;top:-9999px!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
 .christmas-promo__inner>*{min-width:0}.christmas-promo h2{overflow-wrap:anywhere}@media(max-width:340px){.christmas-promo h2{font-size:38px}}
+.campaign-legal-pending{background:#fff1c7;color:#593f00;padding:15px 20px;text-align:center;border-bottom:1px solid #efd273;font:600 14px/1.45 system-ui}.campaign-legal-pending strong{font-weight:900}
