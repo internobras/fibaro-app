@@ -113,19 +113,34 @@ function renderAuth(message=''){
   const urlErr=authErrorFromUrl();
   const msg=message||urlErr;
   const login=authMode==='login';
-  app.innerHTML=`<section class="auth"><div class="authCard"><div class="authLogo">T</div><div class="eyebrow" style="color:#1769ff">TOP TARIFAS</div><h1>${login?'Inicia sesión.':'Solicita tu acceso.'}</h1><p>${login?'Introduce el correo de tu cuenta. Te enviaremos un enlace para volver a tu perfil, tus ofertas y tus referencias. Sin contraseña.':'Confirma tus datos y tu correo. FÍBARO validará el alta antes de activar tu perfil técnico y tus enlaces personales.'}</p>
+  app.innerHTML=`<section class="auth"><div class="authCard"><div class="authLogo">T</div><div class="eyebrow" style="color:#1769ff">TOP TARIFAS</div><h1>${login?'Inicia sesión.':'Solicita tu acceso.'}</h1><p>${login?'Introduce el correo de tu cuenta. Te enviaremos un código de 6 dígitos para entrar aquí mismo, sin contraseña.':'Confirma tus datos y tu correo. Recibirás un código de 6 dígitos y FÍBARO validará el alta antes de activar tu perfil técnico.'}</p>
   ${login?'':`<div class="field"><label for="a-name">Nombre o alias</label><input id="a-name" autocomplete="name" placeholder="Ej. Juan Carlos o JaviFiber" value="${esc(pending.name||'')}"></div>
   <div class="field"><label for="a-phone">Móvil</label><div class="phoneWrap"><div class="prefix">+34</div><input id="a-phone" inputmode="tel" autocomplete="tel-national" placeholder="600 000 000" value="${esc(pending.phone||'')}"></div></div>`}
   <div class="field"><label for="a-email">Correo electrónico</label><input id="a-email" type="email" inputmode="email" autocomplete="email" placeholder="tu@correo.com" value="${esc(pending.email||'')}"><small>${login?'Usa el mismo correo con el que creaste tu cuenta.':'El acceso seguro se enviará a este correo. Tu móvil queda como dato de contacto.'}</small></div>
-  <button class="btn primary" id="sendAccess" style="width:100%">Recibir acceso por email</button>
+  <button class="btn primary" id="sendAccess" style="width:100%">Enviar código de acceso</button>
   <div id="authStatus" role="status" class="authStatus ${msg?'error':''}">${esc(msg)}</div><div class="divider"></div><p>${login?'¿Todavía no tienes cuenta?':'¿Ya tienes una cuenta?'}</p><button class="btn" id="switchAuth">${login?'Crear cuenta':'Iniciar sesión'}</button><div class="privacyNote">Tu código público de referido es independiente de tu acceso. Nadie puede entrar en tu cuenta con tu QR o enlace.</div></div></section>`;
   document.getElementById('sendAccess').onclick=sendAccess;
   document.getElementById('switchAuth').onclick=()=>{pending={...pending,email:document.getElementById('a-email').value,name:document.getElementById('a-name')?.value||pending.name,phone:document.getElementById('a-phone')?.value||pending.phone};authMode=login?'register':'login';renderAuth()};
 }
-function renderMailSent(email){
-  app.innerHTML=`<section class="auth"><div class="authCard"><div class="authLogo">✓</div><div class="eyebrow" style="color:#1769ff">ACCESO ENVIADO</div><h1>Revisa tu correo.</h1><p>${pending.mode==='login'?'Si el correo corresponde a una cuenta activa, recibirás un enlace en':'Hemos enviado el acceso a'} <b>${esc(email)}</b>. Toca el enlace del mensaje y volverás directamente a Top Tarifas.</p><div class="actions"><button class="btn" id="changeEmail">Cambiar datos</button><button class="btn primary" id="resendAccess">Reenviar acceso</button></div><div id="authStatus" class="authStatus ok">El enlace caduca por seguridad. Si no lo ves, revisa spam o promociones.</div></div></section>`;
+function renderCodeSent(email){
+  app.innerHTML=`<section class="auth"><div class="authCard"><div class="authLogo">6</div><div class="eyebrow" style="color:#1769ff">CÓDIGO ENVIADO</div><h1>Introduce tu código.</h1><p>${pending.mode==='login'?'Si el correo corresponde a una cuenta activa, recibirás un código en':'Hemos enviado un código a'} <b>${esc(email)}</b>. Escríbelo aquí sin cambiar de pestaña.</p><div class="field"><label for="a-otp">Código de 6 dígitos</label><input class="otp" id="a-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000"></div><button class="btn primary" id="verifyAccess" style="width:100%">Entrar en Top Tarifas</button><div id="authStatus" role="status" class="authStatus ok">El código caduca y solo puede utilizarse una vez. Revisa spam o promociones si no lo ves.</div><div class="divider"></div><div class="actions"><button class="btn" id="changeEmail">Cambiar correo</button><button class="btn" id="resendAccess">Reenviar código</button></div></div></section>`;
+  const input=document.getElementById('a-otp');
+  input.oninput=()=>{input.value=input.value.replace(/\D/g,'').slice(0,6)};
+  input.onkeydown=e=>{if(e.key==='Enter')verifyAccess()};
+  document.getElementById('verifyAccess').onclick=verifyAccess;
   document.getElementById('changeEmail').onclick=()=>renderAuth();
   document.getElementById('resendAccess').onclick=sendAccessFromPending;
+  input.focus();
+}
+async function verifyAccess(){
+  const input=document.getElementById('a-otp'),token=(input?.value||'').replace(/\D/g,'');
+  const st=document.getElementById('authStatus'),btn=document.getElementById('verifyAccess');
+  if(!pending.email||token.length!==6){st.textContent='Introduce los 6 dígitos del correo.';st.className='authStatus error';return}
+  btn.disabled=true;st.textContent='Verificando código…';st.className='authStatus';
+  const{error}=await supabase.auth.verifyOtp({email:pending.email,token,type:'email'});
+  if(error){btn.disabled=false;st.textContent=/expired|invalid|token/i.test(error.message||'')?'El código no es válido o ha caducado. Solicita uno nuevo.':friendlyAuthError(error);st.className='authStatus error';input.select();return}
+  st.textContent='Acceso confirmado. Abriendo tu espacio…';st.className='authStatus ok';
+  await load();
 }
 function friendlyAuthError(error){
   const code=String(error?.code||'');const m=String(error?.message||'');
@@ -151,10 +166,10 @@ async function sendAccess(){
     const j=await r.json().catch(()=>({}));
     btn.disabled=false;
     if(!r.ok)throw new Error(j.error||'No se ha podido enviar el acceso.');
-    renderMailSent(email);
+    renderCodeSent(email);
   }catch(error){btn.disabled=false;st.textContent=friendlyAuthError(error);st.className='authStatus error'}
 }
-async function sendAccessFromPending(){if(!pending.email){renderAuth();return}const btn=document.getElementById('resendAccess'),st=document.getElementById('authStatus');btn.disabled=true;st.textContent='Reenviando…';try{const r=await fetch(AUTH_FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},body:JSON.stringify({name:pending.name||'',phone:pending.phone||'',email:pending.email,mode:pending.mode||'register',website:''})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'No se ha podido reenviar el acceso.');st.textContent='Acceso reenviado.';st.className='authStatus ok';setTimeout(()=>btn.disabled=false,60000)}catch(error){st.textContent=friendlyAuthError(error);st.className='authStatus error';btn.disabled=false}}
+async function sendAccessFromPending(){if(!pending.email){renderAuth();return}const btn=document.getElementById('resendAccess'),st=document.getElementById('authStatus');btn.disabled=true;st.textContent='Reenviando…';try{const r=await fetch(AUTH_FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},body:JSON.stringify({name:pending.name||'',phone:pending.phone||'',email:pending.email,mode:pending.mode||'register',website:''})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'No se ha podido reenviar el código.');st.textContent='Código reenviado.';st.className='authStatus ok';setTimeout(()=>btn.disabled=false,60000)}catch(error){st.textContent=friendlyAuthError(error);st.className='authStatus error';btn.disabled=false}}
 
 async function load(){
   app.innerHTML='<div class="loading">Cargando tu espacio…</div>';
