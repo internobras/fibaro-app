@@ -4,3 +4,6 @@
 @media(max-width:820px){.grid3{grid-template-columns:1fr}.shell{padding-bottom:125px}.bottom{left:0;right:0;bottom:0;border-top:1px solid #d6e0e5;box-shadow:0 -10px 35px rgba(7,24,39,.07);padding:9px 12px calc(9px + env(safe-area-inset-bottom))}.bottomin{max-width:820px;margin:auto}.generate{width:100%;min-height:50px}.count{display:none}.status{max-width:820px;margin:auto;padding-top:5px}}
 @media(max-width:620px){.grid{grid-template-columns:1fr}.epi-grid{grid-template-columns:1fr}.heroin{padding:20px 14px}.heroin h1{font-size:34px}.shell{padding-left:8px;padding-right:8px}.card{border-radius:13px;padding:13px}.medio-toggle,.tipo-toggle{flex-direction:column}.poste-safety-grid{padding:8px}#sigpad{height:190px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* Long order references scroll inside the native text input. */
+.field{min-width:0}#nactuacion{min-width:0;max-width:100%;text-overflow:clip}

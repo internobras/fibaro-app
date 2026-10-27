@@ -330,6 +330,7 @@ function validateBeforeGenerate(postes) {
   const fail=(el,msg)=>{if(el){el.setAttribute('aria-invalid','true');el.scrollIntoView({block:'center'});el.focus({preventScroll:true});}return msg;};
   const required=[['nactuacion','Número de actuación'],['empresa','Empresa'],['unidad','Unidad'],['fecha','Fecha'],['hora','Hora'],['provincia','Provincia'],['poblacion','Población'],['central','Central'],['direccion','Dirección'],['trabajo','Trabajo a realizar']];
   for(const [id,label] of required)if(!val(id).trim())return fail(document.getElementById(id),label+': completa este campo.');
+  if(val('nactuacion').length>100)return fail(document.getElementById('nactuacion'),'Número de actuación: el máximo es de 100 caracteres.');
   for(const name of ['clima','mep1','mep2','mep3'])if(!radio(name))return fail(document.querySelector('[name="'+name+'"]'),'Responde: '+groupLabel(name));
   const rows=[...document.querySelectorAll('.persona-row')];
   if(!rows.length)return fail(document.querySelector('[data-add-person]'),'Añade al menos un técnico.');
@@ -471,6 +472,18 @@ function drawTxt(page, font, fontBold, spec, str, opts = {}) {
   }
 }
 
+// Keep the complete identifier in its original official cell. Measure the
+// actual glyph widths and reduce the font only as much as necessary.
+// Draw verbatim so spaces, separators and leading zeros are preserved.
+function drawOrderReference(page, font, fontBold, reference) {
+  if (!reference) return;
+  const spec = TXT.nactuacion;
+  // drawText emits unkerned glyphs: sum advances to match the saved PDF exactly.
+  const width = Array.from(reference).reduce((total, char) => total + font.widthOfTextAtSize(char, 1), 0);
+  const size = Math.min(spec.size || 7, spec.width / width);
+  page.drawText(reference, {x:spec.x, y:spec.y, size, font});
+}
+
 function wrapAndDraw(page, font, str, x, y, maxWidth, size, lineH) {
   const words = String(str).split(/\s+/).flatMap(word=>{
     const chunks=[];let chunk='';for(const char of word){if(font.widthOfTextAtSize(chunk+char,size)>maxWidth){chunks.push(chunk);chunk='';}chunk+=char;}if(chunk)chunks.push(chunk);return chunks;
@@ -497,7 +510,7 @@ function fillParte(page, font, fontBold, g, poste, sigImg) {
   drawTxt(page, font, fontBold, TXT.poblacion, g.poblacion);
   drawTxt(page, font, fontBold, TXT.empresa, g.empresa);
   drawTxt(page, font, fontBold, TXT.unidad, g.unidad);
-  drawTxt(page, font, fontBold, TXT.nactuacion, g.nactuacion);
+  drawOrderReference(page, font, fontBold, g.nactuacion);
   drawTxt(page, font, fontBold, TXT.fecha, formatDateES(g.fecha));
   drawTxt(page, font, fontBold, TXT.hora, g.hora);
   drawTxt(page, font, fontBold, TXT.central, g.central);
@@ -623,8 +636,15 @@ const LADDER_LABELS=['Revisión de escalera vigente y acreditada','Escalera en b
 function accessFields(id){return `<div class="field"><label>Medio de acceso de este poste</label><div class="medio-toggle"><label><input type="radio" name="medio-${id}" value="ESCALERA">Escalera con patas estabilizadoras</label><label><input type="radio" name="medio-${id}" value="PEMP">PEMP</label></div></div><div class="ladder-checks"><h3>Comprobación de la escalera</h3>${LADDER_LABELS.map((label,i)=>`<div class="field"><label>${label}</label><div class="yn">${['SI','NO',...(i===2?['NA']:[])].map(v=>`<label class="opt"><input type="radio" name="s7${i===7?'final':'abcdefg'[i]}-${id}" value="${v}">${v==='SI'?'Sí':v==='NO'?'No':'No aplica'}</label>`).join('')}</div></div>`).join('')}<div class="field"><label>Otras circunstancias que hagan inseguro el trabajo</label><input type="text" class="ladder-obs" maxlength="130" placeholder="Indica cualquier incidencia"></div></div>`;}
 function groupLabel(name){const e=document.querySelector('[name="'+name+'"]');return e?.closest('.field,.sec7-row')?.querySelector('label,.txt')?.textContent || name;}
 function validatePdfCapacity(font,g,postes){
+  // Preserve the existing font compatibility check without imposing the tiny
+  // official cell's capacity on the order reference.
+  try { font.encodeText(g.nactuacion); } catch (_) {
+    const el=document.getElementById('nactuacion');
+    el.setAttribute('aria-invalid','true');el.scrollIntoView({block:'center'});el.focus({preventScroll:true});
+    return 'Número de actuación: contiene caracteres que no admite el formulario.';
+  }
   const fields=[];
-  for(const key of ['empresa','unidad','provincia','poblacion','nactuacion','central','trabajo'])fields.push([document.getElementById(key),TXT[key].width,1]);
+  for(const key of ['empresa','unidad','provincia','poblacion','central','trabajo'])fields.push([document.getElementById(key),TXT[key].width,1]);
   for(const row of document.querySelectorAll('.persona-row')){fields.push([row.querySelector('.p-nombre'),241,1],[row.querySelector('.p-categoria'),101,1]);}
   fields.push([document.getElementById('rp-nombre'),248,1],[document.getElementById('rp-nif'),266,1],[document.getElementById('obs9'),150,2],[document.getElementById('epi-otros'),85,1],[document.getElementById('tel112'),110,1]);
   for(const card of document.querySelectorAll('.poste-card')){

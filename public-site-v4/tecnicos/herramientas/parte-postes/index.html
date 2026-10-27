@@ -8,9 +8,9 @@
 <title>Parte de seguridad de postes · TÉCNICOS</title>
 <meta name="description" content="Generador de partes de seguridad para trabajos en postes.">
 <link rel="icon" href="/tecnicos/icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/tecnicos/herramientas/parte-postes/final.css?v=20260915-v2">
+<link rel="stylesheet" href="/tecnicos/herramientas/parte-postes/final.css?v=20261027-orden2">
 <script defer src="/tecnicos/herramientas/parte-postes/pdf-lib.min.js"></script>
-<script defer src="/tecnicos/herramientas/parte-postes/app.js?v=20260915-v3"></script>
+<script defer src="/tecnicos/herramientas/parte-postes/app.js?v=20261027-orden2"></script>
 <script defer src="/tecnicos/herramientas/parte-postes/app-final.js?v=20260915-v2"></script>
 <script defer src="/tecnicos/herramientas/parte-postes/app-fast.js?v=20260915-v1"></script>
 </head>
@@ -29,7 +29,7 @@
 <div class="field"><label>Hora</label><input id="hora" type="time"></div>
 <div class="field"><label>Provincia</label><input id="provincia" type="text"></div>
 <div class="field"><label>Población</label><input id="poblacion" type="text"></div>
-<div class="field"><label>Nº actuación / orden</label><input id="nactuacion" type="text" autocomplete="off"></div>
+<div class="field"><label>Nº actuación / orden</label><input id="nactuacion" type="text" inputmode="text" maxlength="100" autocomplete="off" aria-describedby="orden-help"><small id="orden-help" class="help">Hasta 100 caracteres. Se conserva la referencia completa en el PDF.</small></div>
 <div class="field"><label>Central</label><input id="central" type="text" autocomplete="off"></div>
 </div>
 <div class="field"><label>Dirección base para todos los postes</label><input id="direccion" type="text" autocomplete="street-address" placeholder="Calle y número"><small class="help">Puedes cambiarla en un poste concreto.</small></div>
